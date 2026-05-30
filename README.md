@@ -44,6 +44,24 @@ but cannot run unless Perl is installed, so `xelatex` is the verified command:
 & 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error -output-directory=theory 'theory\reproduction_derivation.tex'
 ```
 
+Generate the inter-cluster interference extension figures:
+
+```powershell
+& 'D:\ProgramData\anaconda3\envs\neu\python.exe' 'src\reproduce_interference_figures.py' --all --mode final
+```
+
+Compile the interference derivation and results reports from the `theory`
+folder so relative figure paths resolve:
+
+```powershell
+Push-Location theory
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'interference_derivation.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'interference_derivation.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'interference_results_analysis.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'interference_results_analysis.tex'
+Pop-Location
+```
+
 ## Outputs
 
 - `theory/reproduction_derivation.tex`: Chinese derivation of the system model, contact-angle distributions, outage probability, average rate, and bounds.
@@ -55,6 +73,18 @@ but cannot run unless Perl is installed, so `xelatex` is the verified command:
 - `figures/data/`: plotted numerical values as CSV.
 - `figures/reference/`: local crops from the paper PDF for QA only.
 - `qa/figure_match_report.md`: image comparison metrics and side-by-side links.
+
+Interference-extension outputs on branch `interference-extension`:
+
+- `theory/interference_derivation.tex`: Chinese derivation of the same-frequency inter-cluster interference model.
+- `theory/interference_derivation.pdf`: compiled interference derivation report.
+- `theory/interference_results_analysis.tex`: Chinese analysis report with Fig.I1-Fig.I5 and conclusions.
+- `theory/interference_results_analysis.pdf`: compiled results analysis report.
+- `src/interference_model.py`: conditional geometry, aggregate interference simulation, mean-field INR, coverage, and rate evaluators.
+- `src/reproduce_interference_figures.py`: Fig.I1-Fig.I5 generation entry point.
+- `figures/interference/`: generated interference figures as PDF and PNG.
+- `figures/interference_data/`: CSV data for every interference figure.
+- `qa/interference_review_report.md`: validation checks, assumptions, and residual limitations.
 
 The original IEEE PDF, `figures/reference/`, and `qa/*_side_by_side.png` are
 local QA inputs/diagnostics and are intentionally ignored by Git.  To rerun the
@@ -76,3 +106,11 @@ file name used by `src/qa_compare_figures.py`.
 - Fig.6: leader-follower average rate grows approximately linearly with the number of followers.
 - Fig.7: high leader-power curves show an interior optimum over leader-follower transmit power.
 - Fig.8: average rate increases with `N_L` and gradually saturates.
+
+Interference-extension anchors:
+
+- Turning off inter-cluster interference recovers the no-interference Monte Carlo cluster rate within about 2%.
+- `N_F=0` reduces to a leader-only same-frequency interference network.
+- Increasing `N_F` or `N_L` does not reduce mean INR in the checked parameter range.
+- Same-frequency interference shifts SINR coverage strongly left; at `N_L=1500`, `N_F=10`, coverage is already near zero at `-10 dB`.
+- Mean-field INR matches Monte Carlo mean INR within 1% on the spot-check cases used in the QA report.

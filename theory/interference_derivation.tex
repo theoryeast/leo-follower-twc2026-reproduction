@@ -1,0 +1,393 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\setlist[itemize]{leftmargin=2em}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+
+\newcommand{\Rearth}{R_{\oplus}}
+\newcommand{\Rsat}{R_{\rm sat}}
+\newcommand{\thetac}{\theta_{\rm cap}}
+\newcommand{\thetam}{\theta_{\max}}
+\newcommand{\NL}{N_{\rm L}}
+\newcommand{\NF}{N_{\rm F}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\dd}{\,{\rm d}}
+\newcommand{\SINR}{\operatorname{SINR}}
+\newcommand{\SNR}{\operatorname{SNR}}
+\newcommand{\rLU}{r_{\rm LU}}
+\newcommand{\rFU}{r_{\rm FU}}
+\newcommand{\rLF}{r_{\rm LF}}
+\newcommand{\IL}{I_{\rm L}}
+\newcommand{\IF}{I_{\rm F}}
+\newcommand{\IT}{I}
+\newcommand{\Lcal}{\mathcal{L}}
+
+\title{密集同频 LEO Follower 网络的集群间干扰扩展推导}
+\author{Extension notes based on the follower-based LEO reproduction project}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{研究问题与建模边界}
+
+原复现模型默认典型用户只受到热噪声影响，因此增加 follower 的收益主要体现为更多
+leader--follower--user 中继分支。这里研究一个更密集、也更保守的场景：所有
+leader cluster 在同一地面下行资源上全复用，典型用户由最近的 leader cluster 服务，
+服务集群的 leader 与 followers 提供期望信号，所有非服务集群的 leaders 与 followers
+构成集群间干扰。leader--follower 星间链路默认保持高方向性或采用正交资源，因此不把
+星间链路干扰纳入地面同频瓶颈。
+
+本文档中的距离、功率、Shadowed-Rician 衰落和中继速率符号沿用复现版。令
+\begin{equation}
+    \xi_x
+    =
+    \frac{\rho_x G_x \zeta_x}{\sigma_U^2}
+    \left(\frac{\lambda_x}{4\pi}\right)^2,
+    \qquad x\in\{{\rm LU},{\rm FU}\},
+\end{equation}
+表示按用户端噪声归一化后的链路预算系数。若 $W$ 为单位链路上的小尺度功率增益，
+则接触角为 $\theta$ 的卫星到用户归一化接收功率为
+\begin{equation}
+    S_x(\theta)=\frac{\xi_x W}{r(\theta)^2},
+    \qquad
+    r(\theta)=\sqrt{\Rsat^2+\Rearth^2-2\Rsat\Rearth\cos\theta}.
+\end{equation}
+
+\section{最近服务集群与条件几何}
+
+将典型用户放在球面北极方向。$\NL$ 个 leader 构成球面 BPP。最近 leader 的接触角
+$\Theta_0$ 的未截断密度为
+\begin{equation}
+    f_{\Theta_0}(\theta)
+    =
+    \frac{\NL}{2}\sin\theta
+    \left(\frac{1+\cos\theta}{2}\right)^{\NL-1},
+    \qquad 0\leq \theta\leq \pi .
+    \label{eq:nearest-density}
+\end{equation}
+由于用户只在可见角 $\thetam$ 内被服务，后续推导采用条件密度
+\begin{equation}
+    f_{\Theta_0\mid{\rm vis}}(\theta)
+    =
+    \frac{f_{\Theta_0}(\theta)}
+    {p_{\rm vis}},
+    \quad
+    0\leq\theta\leq\thetam,
+    \qquad
+    p_{\rm vis}
+    =
+    1-
+    \left(\frac{1+\cos\thetam}{2}\right)^{\NL}.
+    \label{eq:visible-nearest}
+\end{equation}
+
+给定 $\Theta_0=\theta_0$ 后，其余 $\NL-1$ 个 leader 必须落在服务球冠之外，即
+$\Theta_j\geq \theta_0$。由于 BPP 条件独立性，每个非服务 leader 的条件密度为
+\begin{equation}
+    f_{\Theta_j\mid\Theta_0}(\theta\mid\theta_0)
+    =
+    \frac{\sin\theta}{1+\cos\theta_0},
+    \qquad
+    \theta_0\leq\theta\leq\pi .
+    \label{eq:conditional-leader}
+\end{equation}
+其中可见干扰 leader 还需满足 $\theta\leq\thetam$。因此，单个非服务 leader 在用户
+可见区内的条件概率为
+\begin{equation}
+    p_{\rm int,L}(\theta_0)
+    =
+    \int_{\theta_0}^{\thetam}
+    \frac{\sin\theta}{1+\cos\theta_0}\dd\theta
+    =
+    \frac{\cos\theta_0-\cos\thetam}{1+\cos\theta_0}.
+    \label{eq:visible-interferer-prob}
+\end{equation}
+
+对第 $j$ 个非服务 cluster，令其 follower 在以该 leader 为中心、角半径为
+$\thetac$ 的球冠内均匀分布。用 $\Psi_{j,k}$ 表示 follower 与其 leader 的球面偏移角，
+$\Phi_{j,k}$ 表示方位角，则
+\begin{equation}
+    f_{\Psi}(\psi)=
+    \frac{\sin\psi}{1-\cos\thetac},
+    \quad 0\leq\psi\leq\thetac,
+    \qquad
+    f_{\Phi}(\phi)=\frac{1}{2\pi}.
+\end{equation}
+该 follower 到典型用户的接触角 $\Theta^F_{j,k}$ 满足球面余弦关系
+\begin{equation}
+    \cos\Theta^F_{j,k}
+    =
+    \cos\Theta_j\cos\Psi_{j,k}
+    +\sin\Theta_j\sin\Psi_{j,k}\cos\Phi_{j,k}.
+    \label{eq:follower-contact-angle}
+\end{equation}
+当 $\Theta^F_{j,k}\leq\thetam$ 时，该 follower 对典型用户可见并产生地面同频干扰。
+
+\section{归一化 SINR 与聚合干扰}
+
+给定服务接触角 $\Theta_0$ 和服务 cluster 内第 $i$ 个 follower 的接触角
+$\Theta^F_{0,i}$，服务信号为
+\begin{align}
+    S_{\rm LU}
+    &=
+    \frac{\xi_{\rm LU} W_{0}^{\rm L}}{r(\Theta_0)^2},\\
+    S_{{\rm FU},i}
+    &=
+    \frac{\xi_{\rm FU} W_{0,i}^{\rm F}}{r(\Theta^F_{0,i})^2}.
+\end{align}
+非服务 leader 与 follower 的归一化干扰分别写为
+\begin{align}
+    \IL
+    &=
+    \sum_{j=1}^{\NL-1}
+    \mathbf{1}\{\Theta_j\leq\thetam\}
+    \frac{\xi_{\rm LU} W_{j}^{\rm L}}{r(\Theta_j)^2},
+    \label{eq:leader-interference}\\
+    \IF
+    &=
+    \sum_{j=1}^{\NL-1}\sum_{k=1}^{\NF}
+    \mathbf{1}\{\Theta^F_{j,k}\leq\thetam\}
+    \frac{\xi_{\rm FU} W_{j,k}^{\rm F}}{r(\Theta^F_{j,k})^2}.
+    \label{eq:follower-interference}
+\end{align}
+总干扰为 $\IT=\IL+\IF$。由于已经按用户噪声 $\sigma_U^2$ 归一化，地面下行 SINR 为
+\begin{equation}
+    \SINR_{\rm LU}
+    =
+    \frac{S_{\rm LU}}{1+\IT},
+    \qquad
+    \SINR_{{\rm FU},i}
+    =
+    \frac{S_{{\rm FU},i}}{1+\IT}.
+    \label{eq:sinr}
+\end{equation}
+式 \eqref{eq:sinr} 清楚显示：继续增加 follower 一方面增加服务分支，另一方面也通过
+\eqref{eq:follower-interference} 线性增加其他 cluster 的潜在干扰源。
+
+\section{条件 Laplace 变换}
+
+记单个非服务 cluster 在条件 $\Theta_0=\theta_0$ 下的干扰为
+\begin{equation}
+    Z_j
+    =
+    \mathbf{1}\{\Theta_j\leq\thetam\}
+    \frac{\xi_{\rm LU} W_{j}^{\rm L}}{r(\Theta_j)^2}
+    +
+    \sum_{k=1}^{\NF}
+    \mathbf{1}\{\Theta^F_{j,k}\leq\thetam\}
+    \frac{\xi_{\rm FU} W_{j,k}^{\rm F}}{r(\Theta^F_{j,k})^2}.
+\end{equation}
+给定 $\theta_0$ 后，不同非服务 cluster 条件独立，因此总干扰的 Laplace 变换为
+\begin{equation}
+    \Lcal_{\IT}(s\mid\theta_0)
+    =
+    \left(
+    \E_{\Theta,\Psi,\Phi,W}
+    \left[\exp(-s Z_1)\mid\theta_0\right]
+    \right)^{\NL-1}.
+    \label{eq:laplace-product}
+\end{equation}
+
+若 $W$ 采用 Gamma 近似，形状参数和尺度参数分别为 $\kappa,\beta$，则
+\begin{equation}
+    \E_W\{\exp(-aW)\}=(1+\beta a)^{-\kappa}.
+\end{equation}
+于是单个 cluster 的条件项可展开为
+\begin{align}
+    \mathcal{G}(s\mid\theta_0)
+    &=
+    \int_{\theta_0}^{\pi}
+    \frac{\sin\theta}{1+\cos\theta_0}
+    \mathcal{A}_{\rm L}(s,\theta)
+    \left[
+      \mathcal{A}_{\rm F}(s,\theta)
+    \right]^{\NF}
+    \dd\theta,
+    \label{eq:single-cluster-lt}\\
+    \mathcal{A}_{\rm L}(s,\theta)
+    &=
+    \begin{cases}
+    \left(1+\beta s\xi_{\rm LU}/r(\theta)^2\right)^{-\kappa},
+    & \theta\leq\thetam,\\
+    1, & \theta>\thetam,
+    \end{cases}\\
+    \mathcal{A}_{\rm F}(s,\theta)
+    &=
+    \int_0^{\thetac}\int_0^{2\pi}
+    \left(1+\beta s\xi_{\rm FU}
+    \frac{\mathbf{1}\{\Theta^F(\theta,\psi,\phi)\leq\thetam\}}
+    {r(\Theta^F(\theta,\psi,\phi))^2}
+    \right)^{-\kappa}
+    \frac{\sin\psi}{2\pi(1-\cos\thetac)}
+    \dd\phi\dd\psi .
+\end{align}
+因此
+\begin{equation}
+    \Lcal_{\IT}(s\mid\theta_0)=\mathcal{G}(s\mid\theta_0)^{\NL-1}.
+\end{equation}
+这个表达式是完整的半解析干扰描述；代码中出于图形扫描效率，同时实现了
+Monte Carlo 采样和均值干扰近似。
+
+\section{干扰感知覆盖概率}
+
+给定阈值 $\gamma$，leader 分支覆盖概率可写为
+\begin{align}
+    P_{\rm cov}^{\rm LU}(\gamma)
+    &=
+    \E_{\Theta_0,\IT}
+    \left[
+    \bar F_W
+    \left(
+    \frac{\gamma(1+\IT)r(\Theta_0)^2}{\xi_{\rm LU}}
+    \right)
+    \right],
+    \label{eq:leader-coverage}
+\end{align}
+其中 $\bar F_W(x)=1-F_W(x)$。采用 Gamma 近似时
+$\bar F_W(x)=\Gamma(\kappa,x/\beta)/\Gamma(\kappa)$。
+
+若把 cluster 的覆盖定义为至少一个地面下行分支超过阈值，则
+\begin{equation}
+    P_{\rm cov}^{\rm cl}(\gamma)
+    =
+    \Prob\left[
+    \max\left(\SINR_{\rm LU},\SINR_{{\rm FU},1},\ldots,\SINR_{{\rm FU},\NF}\right)
+    \geq \gamma
+    \right].
+    \label{eq:cluster-coverage}
+\end{equation}
+式 \eqref{eq:cluster-coverage} 在数值代码中用固定随机种子的 Monte Carlo 估计，并给出
+95\% 置信区间；关闭 $\IT$ 时可退化回无集群间干扰的复现模型。
+
+\section{平均速率与网络吞吐}
+
+干扰下的 leader--user 平均速率为
+\begin{equation}
+    \bar R_{\rm LU}^{\rm I}
+    =
+    B_{\rm LU}
+    \E\left[
+    \log_2(1+\SINR_{\rm LU})
+    \right].
+\end{equation}
+第 $i$ 个 follower 的地面下行速率为
+\begin{equation}
+    R_{{\rm FU},i}^{\rm I}
+    =
+    B_{\rm FU}
+    \log_2(1+\SINR_{{\rm FU},i}).
+\end{equation}
+星间链路仍按原复现模型计算：
+\begin{equation}
+    R_{{\rm LF},i}
+    =
+    B_{\rm LF}
+    \log_2
+    \left(
+    1+
+    \frac{\xi_{\rm LF}}{r_{\rm LF}(\Psi_{0,i})^2}
+    \right).
+\end{equation}
+于是 cluster relay rate 取瓶颈形式
+\begin{equation}
+    \bar R_{\rm cl}^{\rm I}
+    =
+    \E
+    \left[
+    R_{\rm LU}^{\rm I}
+    +
+    \sum_{i=1}^{\NF}
+    \min\{R_{{\rm LF},i},R_{{\rm FU},i}^{\rm I}\}
+    \right].
+    \label{eq:cluster-rate-interference}
+\end{equation}
+
+若所有 $\NL$ 个 leader cluster 同频运行，则网络总吞吐定义为
+\begin{equation}
+    T_{\rm net}^{\rm I}
+    =
+    \NL \bar R_{\rm cl}^{\rm I}.
+    \label{eq:network-throughput}
+\end{equation}
+对应球面谱效率或面积吞吐密度可写成
+\begin{equation}
+    \eta_{\rm sph}^{\rm I}
+    =
+    \frac{T_{\rm net}^{\rm I}}{4\pi \Rearth^2 B_{\rm LU}},
+\end{equation}
+其中分母可按研究需要替换为实际复用带宽。本文结果图主要报告
+$\bar R_{\rm cl}^{\rm I}$ 和 $T_{\rm net}^{\rm I}$。
+
+\section{均值干扰近似}
+
+为高密度参数扫描提供可解释的半解析近似，定义单个非服务 leader 和单个 follower 的
+平均归一化干扰贡献：
+\begin{align}
+    \bar I_{\rm L}^{(1)}
+    &=
+    \E_{\Theta_0}
+    \left[
+    \int_{\Theta_0}^{\thetam}
+    \frac{\sin\theta}{1+\cos\Theta_0}
+    \frac{\xi_{\rm LU}\E[W]}{r(\theta)^2}
+    \dd\theta
+    \right],\\
+    \bar I_{\rm F}^{(1)}
+    &=
+    \E_{\Theta_0}
+    \left[
+    \int_{\Theta_0}^{\thetam}
+    \frac{\sin\theta}{1+\cos\Theta_0}
+    \E_{\Psi,\Phi}
+    \left\{
+    \mathbf{1}\{\Theta^F\leq\thetam\}
+    \frac{\xi_{\rm FU}\E[W]}{r(\Theta^F)^2}
+    \right\}
+    \dd\theta
+    \right].
+\end{align}
+则
+\begin{equation}
+    \bar I
+    =
+    (\NL-1)
+    \left(
+    \bar I_{\rm L}^{(1)}+\NF \bar I_{\rm F}^{(1)}
+    \right).
+    \label{eq:mean-inr}
+\end{equation}
+将式 \eqref{eq:mean-inr} 代入式 \eqref{eq:sinr} 的分母，即得到代码中的
+mean-field rate evaluator。该近似不替代 Monte Carlo；它的作用是快速观察
+$\NL$--$\NF$ 二维趋势，并作为解析上说明“增加 followers 同时增加信号分支和同频干扰源”
+的桥梁。
+
+\section{退化情形与一致性}
+
+上述模型满足以下退化关系：
+\begin{itemize}
+    \item 当 $\IT=0$ 时，式 \eqref{eq:sinr} 恢复为原复现项目中的噪声受限 SNR 模型。
+    \item 当 $\NF=0$ 时，式 \eqref{eq:follower-interference} 消失，网络退化为
+    leader-only 同频干扰网络。
+    \item 在固定其他参数时，式 \eqref{eq:mean-inr} 对 $\NF$ 单调不减；在可见域内
+    增大 $\NL$ 时，非服务 cluster 数量增加，平均干扰也应不下降。
+    \item 所有 coverage probability 均由概率事件或 Gamma survival function 给出，
+    因而数值结果必须落在 $[0,1]$。
+\end{itemize}
+这些性质被写入代码 sanity check，并记录在 QA 报告中：
+\begin{center}
+    \path{src/interference_model.py}\\
+    \path{qa/interference_review_report.md}
+\end{center}
+
+\end{document}
