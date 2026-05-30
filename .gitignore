@@ -1,0 +1,16 @@
+*.aux
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+__pycache__/
+.pytest_cache/
+
+# Keep licensed source/reference material local.
+*.pdf
+!theory/*.pdf
+!figures/generated/*.pdf
+figures/reference/
+qa/*_side_by_side.png

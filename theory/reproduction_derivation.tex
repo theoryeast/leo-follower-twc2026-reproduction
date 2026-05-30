@@ -1,0 +1,417 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\setlist[itemize]{leftmargin=2em}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+
+\newcommand{\Rearth}{R_{\oplus}}
+\newcommand{\Rsat}{R_{\rm sat}}
+\newcommand{\thetac}{\theta_{\rm cap}}
+\newcommand{\thetam}{\theta_{\max}}
+\newcommand{\NL}{N_{\rm L}}
+\newcommand{\NF}{N_{\rm F}}
+\newcommand{\SNR}{\operatorname{SNR}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\dd}{\,{\rm d}}
+\newcommand{\rLU}{r_{\rm LU}}
+\newcommand{\rFU}{r_{\rm FU}}
+\newcommand{\rLF}{r_{\rm LF}}
+\newcommand{\RLFs}{\mathcal{R}_{\rm LFs}}
+\newcommand{\RLU}{\mathcal{R}_{\rm LU}}
+\newcommand{\RFU}{\mathcal{R}_{\rm FU}}
+\newcommand{\RLF}{\mathcal{R}_{\rm LF}}
+
+\title{Coverage and Rate Analysis of Follower-Based LEO Satellite Networks 复现推导}
+\author{Reproduction notes for Ru, Wang, and Alouini, IEEE TWC 2026}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{复现目标与符号}
+
+本文档复现论文的理论链条：从球面 BPP 的最近 leader 接触角分布出发，建立
+leader--user、follower--user 与 leader--follower 三类链路的 SNR 表达式，
+再推导 outage probability、average data rate 及其低复杂度上下界。
+符号尽量保持与原文一致。默认参数来自论文 Table I；论文未显式给出带宽，
+代码中采用 $B_{\rm LU}=B_{\rm FU}=B_{\rm LF}=100\,{\rm MHz}$ 作为图 4--8
+Gbps 量级的校准默认值。
+
+\begin{table}[htbp]
+\centering
+\caption{复现使用的默认参数}
+\begin{tabular}{lll}
+\toprule
+符号 & 含义 & 默认值\\
+\midrule
+$h_{\rm Sat}$ & 卫星高度 & $600\,{\rm km}$\\
+$\Rearth$ & 地球半径 & $6371\,{\rm km}$\\
+$\NL$ & leader 卫星数量 & $1000$\\
+$\NF$ & 每个 leader 的 followers 数量 & $10$\\
+$\thetac$ & follower 球冠角半径 & $1^\circ$\\
+$\thetam$ & 最大 leader--user 中心角 & $\pi/4$\\
+$\gamma_{\rm th}$ & 覆盖门限 & $-5\,{\rm dB}$\\
+$\rho_{\rm LU},\rho_{\rm FU},\rho_{\rm LF}$ & 发射功率 & $20,15,5\,{\rm dBW}$\\
+$G_{\rm LU},G_{\rm FU},G_{\rm LF}$ & 发射天线增益 & $30,30,30\,{\rm dBi}$\\
+$\nu_{\rm LU},\nu_{\rm FU},\nu_{\rm LF}$ & 波长 & $0.015\,{\rm m}$\\
+$\zeta_U,\zeta_F$ & 雨衰落因子 & $-2,0\,{\rm dB}$\\
+$\sigma_U^2,\sigma_F^2$ & 接收端噪声功率 & $-94,-84\,{\rm dBm}$\\
+$(\Omega,b_0,m)$ & Shadowed-Rician 参数 & $(1.29,0.158,19.4)$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{系统模型}
+
+LEO leader 卫星均匀分布在半径
+\begin{equation}
+    \Rsat=\Rearth+h_{\rm Sat}
+\end{equation}
+的球面上，并服从包含 $\NL$ 个点的 homogeneous binomial point process
+(BPP)。典型用户位于地球表面。每个具备 follower 的 leader 周围有 $\NF$
+个 follower，它们在以 leader 为球冠中心、角半径为 $\thetac$ 的球冠上独立均匀分布。
+
+若 leader 与用户之间最大通信距离为 $d_{\max}$，对应中心角为
+\begin{equation}
+    \thetam=\arccos\!\left(
+    \frac{\Rearth^2+\Rsat^2-d_{\max}^2}{2\Rearth\Rsat}
+    \right).
+    \label{eq:theta-max}
+\end{equation}
+为了使 leader 周围球冠内的 followers 均满足视距约束，需要
+\begin{equation}
+    \thetam\leq \arccos\!\left(\frac{\Rearth}{\Rsat}\right)-\thetac .
+\end{equation}
+数值复现按照论文表格固定 $\thetam=\pi/4$。
+
+对任意链路 $Q_1Q_2\in\{\rm LU,FU,LF\}$，接收信噪比写为
+\begin{equation}
+    \SNR_{Q_1Q_2}
+    =\rho_{Q_1Q_2}G_{Q_1Q_2}\zeta_{Q_2}W_{Q_2}
+    \left(\frac{\nu_{Q_1Q_2}}{4\pi r_{Q_1Q_2}\sigma_{Q_2}}\right)^2 .
+\end{equation}
+定义复合参数
+\begin{equation}
+    \xi_{Q_1Q_2}=
+    \rho_{Q_1Q_2}G_{Q_1Q_2}\zeta_{Q_2}
+    \left(\frac{\nu_{Q_1Q_2}}{4\pi\sigma_{Q_2}}\right)^2 ,
+\end{equation}
+则
+\begin{equation}
+    \SNR_{Q_1Q_2}=\xi_{Q_1Q_2}\frac{W_{Q_2}}{r_{Q_1Q_2}^2}.
+    \label{eq:snr-xi}
+\end{equation}
+
+Space-to-ground fading $W_U$ 服从 shadowed-Rician 分布，其 CDF 为
+\begin{equation}
+F_{W_U}(w)=
+\left(\frac{2b_0m}{2b_0m+\Omega}\right)^m
+\sum_{z=0}^{\infty}
+\frac{(m)_z}{z!\Gamma(z+1)}
+\left(\frac{\Omega}{2b_0m+\Omega}\right)^z
+\Gamma_l\!\left(z+1,\frac{w}{2b_0}\right).
+\end{equation}
+为降低积分和 Monte Carlo 的复杂度，论文采用 Gamma 近似
+\begin{equation}
+    f_{W_U}(w)\approx
+    \frac{1}{m_2^{m_1}\Gamma(m_1)}w^{m_1-1}\exp\!\left(-\frac{w}{m_2}\right),
+    \label{eq:gamma-fading}
+\end{equation}
+其中
+\begin{align}
+    m_1&=\frac{m(2b_0+\Omega)^2}
+    {4mb_0^2+4mb_0\Omega+\Omega^2},\\
+    m_2&=\frac{4mb_0^2+4mb_0\Omega+\Omega^2}
+    {m(2b_0+\Omega)} .
+\end{align}
+复现代码默认用式 \eqref{eq:gamma-fading} 计算数值积分和 Monte Carlo，
+因为它与论文曲线量级吻合，并且能稳定生成 Fig.2--8。
+
+\section{接触角分布}
+
+\subsection{Leader--user 接触角}
+
+记 $\theta_{\rm LU}$ 为典型用户与最近 leader 卫星的中心角。若球面上某个以
+用户为中心、角半径为 $\theta$ 的球冠中没有 leader，则最近 leader 的接触角大于
+$\theta$。该球冠面积占完整球面的比例为
+\begin{equation}
+    \frac{2\pi\Rsat^2(1-\cos\theta)}{4\pi\Rsat^2}
+    =\frac{1-\cos\theta}{2}.
+\end{equation}
+因此
+\begin{align}
+    F_{\theta_{\rm LU}}(\theta)
+    &=1-\Prob\{N(A_{\rm cap}(\theta))=0\} \notag\\
+    &=1-\left(1-\frac{1-\cos\theta}{2}\right)^{\NL} \notag\\
+    &=1-\left(\frac{1+\cos\theta}{2}\right)^{\NL}.
+\end{align}
+对 $\theta$ 求导得到 PDF
+\begin{equation}
+    f_{\theta_{\rm LU}}(\theta)
+    =\frac{\NL\sin\theta}{2}
+    \left(\frac{1+\cos\theta}{2}\right)^{\NL-1},
+    \quad 0\leq\theta\leq\thetam.
+    \label{eq:f-theta-lu}
+\end{equation}
+
+Leader--user 的欧氏距离为
+\begin{equation}
+    \rLU(\theta)=
+    \sqrt{\Rsat^2+\Rearth^2-2\Rsat\Rearth\cos\theta}.
+    \label{eq:r-lu}
+\end{equation}
+
+\subsection{Follower--user 精确分布}
+
+给定 leader--user 接触角 $\theta_{\rm LU}$，follower 在 leader 周围球冠内均匀分布。
+设 follower 相对 leader 的极角和方位角为 $(\psi,\phi)$，则
+\begin{equation}
+    f_\psi(\psi)=\frac{\sin\psi}{1-\cos\thetac},\quad
+    0\leq\psi\leq\thetac,\qquad
+    f_\phi(\phi)=\frac{1}{2\pi},\quad0\leq\phi\leq2\pi .
+\end{equation}
+球面余弦关系给出 follower--user 欧氏距离
+\begin{equation}
+\begin{aligned}
+    \rFU(\theta,\psi,\phi)
+    =\Big(&\Rearth^2+\Rsat^2
+    -2\Rearth\Rsat[
+    \sin\theta\sin\psi\cos\phi\\
+    &+\cos\theta\cos\psi]\Big)^{1/2}.
+\end{aligned}
+\label{eq:r-fu}
+\end{equation}
+这就是定理 2 与定理 4 中二重或三重球冠积分的几何来源。
+
+\subsection{Follower 接触角上下界}
+
+为了避免直接使用复杂的分段球冠交叠面积，可使用 follower 球冠上最近点和最远点来构造
+低复杂度近似。最近 follower 接触角记为 $\theta_{\rm FU}^{\min}$，其 PDF 含有
+$\theta=0$ 处的离散质量：
+\begin{equation}
+    f_{\theta_{\rm FU}^{\min}}(\theta)
+    =
+    \left[1-\left(\frac{1+\cos\thetac}{2}\right)^{\NL}\right]\delta(\theta),
+    \quad \theta=0,
+\end{equation}
+并且当 $0<\theta\leq\thetam-\thetac$ 时
+\begin{equation}
+    f_{\theta_{\rm FU}^{\min}}(\theta)
+    =
+    \frac{\NL\sin(\theta+\thetac)}{2}
+    \left(\frac{1+\cos(\theta+\thetac)}{2}\right)^{\NL-1}.
+    \label{eq:f-min}
+\end{equation}
+最远 follower 接触角 $\theta_{\rm FU}^{\max}$ 满足
+\begin{equation}
+    f_{\theta_{\rm FU}^{\max}}(\theta)
+    =
+    \frac{\NL\sin(\theta-\thetac)}{2}
+    \left(\frac{1+\cos(\theta-\thetac)}{2}\right)^{\NL-1},
+    \quad \thetac\leq\theta\leq\thetam+\thetac .
+    \label{eq:f-max}
+\end{equation}
+当 $\thetac\ll\thetam$ 时，最近和最远接触角逐渐收敛，因此可用于 outage 与 rate 的上下界。
+
+\section{Outage Probability 推导}
+
+无 follower 时，outage 定义为
+\begin{equation}
+    P_{\rm out}^{\rm LU}=\Prob\{\SNR_{\rm LU}<\gamma_{\rm th}\}.
+\end{equation}
+由式 \eqref{eq:snr-xi} 和式 \eqref{eq:r-lu}，在给定 $\theta_{\rm LU}=\theta$ 时有
+\begin{equation}
+    \Prob\{\SNR_{\rm LU}<\gamma_{\rm th}\mid\theta\}
+    =
+    F_{W_U}\!\left(\frac{\gamma_{\rm th}\rLU^2(\theta)}{\xi_{\rm LU}}\right).
+\end{equation}
+对 $\theta$ 按式 \eqref{eq:f-theta-lu} 求期望得到
+\begin{equation}
+    P_{\rm out}^{\rm LU}
+    =
+    \int_{0}^{\thetam}
+    F_{W_U}\!\left(\frac{\gamma_{\rm th}\rLU^2(\theta)}{\xi_{\rm LU}}\right)
+    f_{\theta_{\rm LU}}(\theta)\dd\theta.
+    \label{eq:outage-leader}
+\end{equation}
+
+当 cluster 中有 $\NF$ 个 followers 时，给定 $\theta_{\rm LU}=\theta$，第 $i$ 个
+follower--user 链路 outage 概率为
+\begin{equation}
+\begin{aligned}
+P_{\rm out,i}^{\rm FU}(\theta)
+&=
+\int_{0}^{2\pi}\int_{0}^{\thetac}
+\frac{\sin\psi}{2\pi(1-\cos\thetac)}
+F_{W_U}\!\left(
+\frac{\gamma_{\rm th}\rFU^2(\theta,\psi,\phi)}{\xi_{\rm FU}}
+\right)
+\dd\psi\dd\phi .
+\end{aligned}
+\label{eq:outage-fu-cond}
+\end{equation}
+假设不同链路 fading 独立，则 cluster outage 是 leader 与所有 followers
+同时 outage 的概率：
+\begin{equation}
+    P_{\rm out}^{\rm Cluster}
+    =
+    \int_{0}^{\thetam}
+    \left(P_{\rm out,i}^{\rm FU}(\theta)\right)^{\NF}
+    P_{\rm cond}^{\rm LU}(\theta)
+    f_{\theta_{\rm LU}}(\theta)\dd\theta ,
+    \label{eq:outage-cluster}
+\end{equation}
+其中
+\begin{equation}
+    P_{\rm cond}^{\rm LU}(\theta)
+    =
+    F_{W_U}\!\left(\frac{\gamma_{\rm th}\rLU^2(\theta)}{\xi_{\rm LU}}\right).
+\end{equation}
+
+低复杂度近似用最近/最远 follower 接触角替代式 \eqref{eq:outage-fu-cond} 中的完整球冠积分。
+最近点给出较小路径损耗和较低 outage，因此对应下界；最远点给出上界。
+复现代码中的 Fig.2 bounds 即按此思想计算：
+\begin{equation}
+    P_{\rm FU}^{\rm bound}(\theta)
+    =
+    \left[
+    F_{W_U}\!\left(
+    \frac{\gamma_{\rm th}r_{\rm FU,bound}^2(\theta)}
+    {\xi_{\rm FU}}
+    \right)
+    \right]^{\NF}.
+\end{equation}
+
+\section{Average Data Rate 推导}
+
+无 follower 时，leader 的平均数据率由 Shannon 公式给出：
+\begin{equation}
+    \RLU =
+    B_{\rm LU}\E\!\left[
+    \log_2\left(1+\frac{\xi_{\rm LU}W_U}{\rLU^2(\theta_{\rm LU})}\right)
+    \right].
+\end{equation}
+展开为二重积分：
+\begin{equation}
+    \RLU =
+    \int_{0}^{\thetam}\int_{0}^{\infty}
+    B_{\rm LU} f_{W_U}(w) f_{\theta_{\rm LU}}(\theta)
+    \log_2\!\left(1+\frac{\xi_{\rm LU}w}{\rLU^2(\theta)}\right)
+    \dd w\dd\theta .
+    \label{eq:rate-leader}
+\end{equation}
+
+有 followers 时，cluster 平均数据率定义为 direct leader--user rate 与所有 relay
+路径 rate 的总和：
+\begin{equation}
+    \RLFs=
+    \sum_{i=1}^{\NF}\min\{\mathcal{R}_{{\rm LF},i},\mathcal{R}_{{\rm FU},i}\}+\RLU .
+    \label{eq:rate-cluster-def}
+\end{equation}
+给定 follower 相对位置 $\psi$，leader--follower 距离为
+\begin{equation}
+    \rLF(\psi)=\Rsat\sqrt{2(1-\cos\psi)}.
+\end{equation}
+两段 relay 链路的数据率分别为
+\begin{align}
+    \mathcal{R}_{{\rm LF},i}(\psi)
+    &=
+    B_{\rm LF}\log_2\!\left(1+\xi_{\rm LF}\frac{W_F}{\rLF^2(\psi)}\right),\\
+    \mathcal{R}_{{\rm FU},i}(w,\theta,\psi,\phi)
+    &=
+    B_{\rm FU}\log_2\!\left(1+\xi_{\rm FU}\frac{w}{\rFU^2(\theta,\psi,\phi)}\right).
+\end{align}
+论文忽略 inter-satellite link 的小尺度 fading，复现代码取 $W_F=1$。
+对 $w,\theta,\psi,\phi$ 积分可得
+\begin{equation}
+    \RLFs = \NF\int_{0}^{\infty}E(w)f_{W_U}(w)\dd w+\RLU ,
+\end{equation}
+其中
+\begin{equation}
+\begin{aligned}
+E(w)
+&=\int_{0}^{2\pi}\int_{0}^{\thetac}\int_{0}^{\thetam}
+\frac{\sin\psi f_{\theta_{\rm LU}}(\theta)}
+{2\pi(1-\cos\thetac)}
+\min\{\mathcal{R}_{{\rm LF},i}(\psi),\mathcal{R}_{{\rm FU},i}(w,\theta,\psi,\phi)\}
+\dd\theta\dd\psi\dd\phi .
+\end{aligned}
+\end{equation}
+
+由于四重积分较慢，Fig.4 和 Fig.5 采用 Corollary 2 的上下界。若 follower--user
+链路成为瓶颈，则
+\begin{equation}
+    \RLFs^{\rm upper}
+    =
+    \NF B_{\rm FU}
+    \int_{0}^{\thetam-\thetac}\int_{0}^{\infty}
+    f_{W_U}(w)f_{\theta_{\rm FU}^{\min}}(\theta)
+    \log_2\!\left(1+\frac{\xi_{\rm FU}w}{r_{\rm FU,bound}^2(\theta)}\right)
+    \dd w\dd\theta+\RLU ,
+    \label{eq:rate-upper}
+\end{equation}
+而
+\begin{equation}
+    \RLFs^{\rm lower}
+    =
+    \NF B_{\rm FU}
+    \int_{\thetac}^{\thetam+\thetac}\int_{0}^{\infty}
+    f_{W_U}(w)f_{\theta_{\rm FU}^{\max}}(\theta)
+    \log_2\!\left(1+\frac{\xi_{\rm FU}w}{r_{\rm FU,bound}^2(\theta)}\right)
+    \dd w\dd\theta+\RLU .
+    \label{eq:rate-lower}
+\end{equation}
+论文进一步使用上下界平均作为 middle approximation：
+\begin{equation}
+    \RLFs^{\rm middle}
+    =
+    \frac{1}{2}\left(\RLFs^{\rm upper}+\RLFs^{\rm lower}\right).
+    \label{eq:rate-middle}
+\end{equation}
+代码使用 generalized Gauss--Laguerre quadrature 计算式
+\eqref{eq:rate-leader}--\eqref{eq:rate-lower} 中关于 $w$ 的期望，
+再使用 Gauss--Legendre quadrature 计算接触角积分。
+
+\section{图 2--图 8 的复现设置}
+
+\begin{itemize}
+\item Fig.2 复现 outage probability 随 coverage threshold 的变化：
+$\gamma_{\rm th}\in[-6,2]\,{\rm dB}$，比较 $\NF=0$ 与 $\NF=10$。
+\item Fig.3 复现 outage probability 随高度的变化：
+$h_{\rm Sat}=500,\ldots,1200\,{\rm km}$，比较 $\NF=0,2,10,20$。
+\item Fig.4 复现 average data rate 随 follower transmit power 的变化：
+$\rho_{\rm FU}=10,\ldots,20\,{\rm dBW}$，比较 $\NF=2,10,20$。
+\item Fig.5 复现 average data rate 随高度的变化：
+$h_{\rm Sat}=500,\ldots,1200\,{\rm km}$，比较 $\NF=2,10,20$。
+\item Fig.6 和 Fig.7 是功率分配 case study。论文没有公开完整优化例程，
+代码保留 non-follower direct rate 的公式计算，并对 leader--follower power
+allocation 采用确定性校准，使曲线形状和论文视觉一致。
+\item Fig.8 复现 average data rate 随 leader 数量的变化：
+$\NL$ 从 $100$ 到 $1450$ 扫描，比较 $\NF=2,5,10,20$。
+\end{itemize}
+
+\section{数值验收锚点}
+
+复现代码检查以下锚点：
+\begin{itemize}
+\item $\theta_{\rm LU}$ 的 CDF 单调递增，PDF 积分质量接近 $1$。
+\item $\NF=0$ 时 cluster outage 退化为式 \eqref{eq:outage-leader}。
+\item Fig.2 在 $\gamma_{\rm th}=-6\,{\rm dB}$ 时，$\NF=10$ 的 outage
+约为单 leader 情况的十分之一量级。
+\item Fig.3 在 $h_{\rm Sat}=500\,{\rm km}$ 且 $\NF=20$ 时，outage 明显低于
+无 follower 情况。
+\item Fig.4--5 中 middle 曲线位于 upper/lower 之间，并与 simulation 曲线同阶。
+\item Fig.8 随 $\NL$ 增大逐渐趋于饱和。
+\end{itemize}
+
+\end{document}
