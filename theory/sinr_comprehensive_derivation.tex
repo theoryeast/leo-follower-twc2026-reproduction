@@ -1,0 +1,366 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+\usepackage[margin=2.1cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.25em}
+
+\newcommand{\E}{\mathbb E}
+\newcommand{\Prob}{\mathbb P}
+\newcommand{\dd}{\,\mathrm d}
+\newcommand{\NL}{N_{\mathrm L}}
+\newcommand{\NF}{N_{\mathrm F}}
+\newcommand{\SINR}{\operatorname{SINR}}
+\newcommand{\SNR}{\operatorname{SNR}}
+\newcommand{\Rearth}{R_{\oplus}}
+\newcommand{\Rsat}{R_{\mathrm S}}
+\newcommand{\thetam}{\theta_{\max}}
+\newcommand{\thetac}{\theta_{\mathrm{cap}}}
+
+\title{密集跟随式 LEO 网络的资源一致 SINR 分析：完整理论推导}
+\author{Comprehensive SINR extension}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{研究目标与模型闭环}
+
+本研究扩展噪声受限的 follower-based LEO 网络模型，分析密集网络中的集群间干扰。
+与简单地把所有可见卫星功率相加不同，本文首先固定资源模型，再定义干扰集合、带宽、
+覆盖事件与端到端速率，从而避免下述不一致：一方面把每个服务分支视为占用完整带宽，
+另一方面又把其他 cluster 的全部分支视为同一资源块上的干扰。
+
+主模型采用\textbf{集群内正交、集群间复用}：
+\begin{itemize}
+  \item 一个 cluster 具有一个 leader 地面资源块和 $\NF$ 个 follower 地面资源块；
+  \item 固定总地面带宽 $B_{\rm G}$ 被均分，每个资源块带宽为
+  \begin{equation}
+      B_{\rm RB}=\frac{B_{\rm G}}{K_{\rm reuse}(\NF+1)};
+      \label{eq:rb-bandwidth}
+  \end{equation}
+  其中频率复用因子 $K_{\rm reuse}$ 同时降低同频干扰密度并付出每集群可用带宽
+  降为 $1/K_{\rm reuse}$ 的代价；
+  \item 不同 clusters 复用相同资源块图样，因此 leader 资源块只受到其他 clusters 的
+  leader 同块干扰；第 $i$ 个 follower 资源块只受到其他 clusters 中同块 follower 干扰；
+  \item cluster 内没有地面同频自干扰，且所有速率相加后不会超过固定总带宽所允许的资源。
+\end{itemize}
+
+此外保留两个对照模型：噪声受限模型，以及所有外部 leader/follower 均同频、服务
+cluster 使用理想 SIC 的极端 full-reuse benchmark。后者只用于说明强干扰上界，不用于
+固定总资源下的公平速率比较。
+
+\section{球面几何与可见性}
+
+地球半径为 $\Rearth$，卫星轨道球半径为
+\begin{equation}
+    \Rsat=\Rearth+h.
+\end{equation}
+$\NL$ 个 leaders 在轨道球面上构成独立均匀 BPP。典型用户位于地球表面北极方向，
+最近且可见的 leader 作为服务 leader。可见角为 $\thetam$。
+
+最近 leader 接触角 $\Theta_0$ 的未条件密度为
+\begin{equation}
+ f_{\Theta_0}(\theta)
+ =
+ \frac{\NL}{2}\sin\theta
+ \left(\frac{1+\cos\theta}{2}\right)^{\NL-1}.
+\end{equation}
+可见概率为
+\begin{equation}
+ p_{\rm vis}
+ =
+ 1-\left(\frac{1+\cos\thetam}{2}\right)^{\NL},
+\end{equation}
+因此服务接触角的条件密度为
+\begin{equation}
+ f_{\Theta_0\mid{\rm vis}}(\theta)
+ =
+ \frac{f_{\Theta_0}(\theta)}{p_{\rm vis}},
+ \qquad 0\leq\theta\leq\thetam.
+ \label{eq:serving-density}
+\end{equation}
+数值实现直接从式 \eqref{eq:serving-density} 的条件分布采样，不再把超出可见域的样本
+裁剪到 $\thetam$，因而不会在边界产生人工概率质量。
+
+给定 $\Theta_0=\theta_0$，任意非服务 leader 的条件密度为
+\begin{equation}
+ f_{\Theta\mid\Theta_0}(\theta\mid\theta_0)
+ =
+ \frac{\sin\theta}{1+\cos\theta_0},
+ \qquad \theta_0\leq\theta\leq\pi.
+ \label{eq:other-leader-density}
+\end{equation}
+
+每个 follower 在其 leader 周围半径 $\thetac$ 的球冠内均匀分布。其相对角
+$\Psi$ 与方位角 $\Phi$ 的密度为
+\begin{equation}
+ f_\Psi(\psi)=\frac{\sin\psi}{1-\cos\thetac},
+ \qquad
+ f_\Phi(\phi)=\frac{1}{2\pi}.
+\end{equation}
+若 parent leader 接触角为 $\Theta$，follower 接触角 $\Theta^{\rm F}$ 满足
+\begin{equation}
+ \cos\Theta^{\rm F}
+ =
+ \cos\Theta\cos\Psi+\sin\Theta\sin\Psi\cos\Phi.
+ \label{eq:follower-contact}
+\end{equation}
+特别需要注意：即使 $\Theta>\thetam$，只要 $\Theta^{\rm F}\leq\thetam$，该 follower
+仍然可见并产生干扰。因此 follower 干扰积分的 parent-leader 上限应为
+$\thetam+\thetac$，而不是 $\thetam$。
+
+\section{链路功率与复用参数}
+
+卫星接触角为 $\theta$ 时，到用户的距离为
+\begin{equation}
+ r_{\rm SU}(\theta)
+ =
+ \sqrt{\Rsat^2+\Rearth^2-2\Rsat\Rearth\cos\theta}.
+\end{equation}
+leader--follower 距离为
+\begin{equation}
+ r_{\rm LF}(\psi)=2\Rsat\sin(\psi/2).
+\end{equation}
+
+令 $W$ 为 Shadowed-Rician 功率增益，其 Gamma 近似为
+\begin{equation}
+ W\sim\operatorname{Gamma}(\kappa,\beta).
+\end{equation}
+地面链路按噪声归一化后的系数记为 $\xi_{\rm LU}$ 和 $\xi_{\rm FU}$。为刻画资源复用、
+活动负载和干扰波束耦合，定义
+\begin{equation}
+ q=\frac{p_{\rm act}}{K_{\rm reuse}},
+ \qquad
+ g_{\rm I}=10^{G_{\rm I,dB}/10},
+\end{equation}
+其中 $p_{\rm act}$ 为活动概率，$K_{\rm reuse}$ 为频率复用因子，$G_{\rm I,dB}$ 为干扰
+链路相对于服务链路的耦合增益。这里 $p_{\rm act}$ 特指“典型资源块已被服务 cluster
+调度”条件下，其他 cluster 在同一资源块上发生同频重叠的概率，而不是整个 cluster 的
+全局空闲概率。每个潜在干扰源通过 Bernoulli$(q)$ 进行稀疏化。
+
+\section{资源一致的干扰与 SINR}
+
+\subsection{Leader 资源块}
+
+leader 资源块上的聚合干扰为
+\begin{equation}
+ I_{\rm L}
+ =
+ \sum_{j=1}^{\NL-1}
+ A_j
+ \mathbf 1\{\Theta_j\leq\thetam\}
+ \frac{g_{\rm I}\xi_{\rm LU}W_j^{\rm L}}{r_{\rm SU}(\Theta_j)^2},
+ \label{eq:leader-rb-interference}
+\end{equation}
+其中 $A_j\sim\operatorname{Bernoulli}(q)$。服务 leader 的 SINR 为
+\begin{equation}
+ \SINR_{\rm LU}
+ =
+ \frac{\xi_{\rm LU}W_0^{\rm L}/r_{\rm SU}(\Theta_0)^2}{1+I_{\rm L}}.
+ \label{eq:leader-sinr}
+\end{equation}
+
+\subsection{Follower 资源块}
+
+第 $i$ 个服务 follower 资源块上，每个非服务 cluster 至多有一个同块 follower。
+其聚合干扰为
+\begin{equation}
+ I_{{\rm F},i}
+ =
+ \sum_{j=1}^{\NL-1}
+ A_{j,i}
+ \mathbf 1\{\Theta_{j,i}^{\rm F}\leq\thetam\}
+ \frac{g_{\rm I}\xi_{\rm FU}W_{j,i}^{\rm F}}
+ {r_{\rm SU}(\Theta_{j,i}^{\rm F})^2}.
+ \label{eq:follower-rb-interference}
+\end{equation}
+服务 follower 自身只有在可见时才提供地面链路：
+\begin{equation}
+ \SINR_{{\rm FU},i}
+ =
+ \mathbf 1\{\Theta_{0,i}^{\rm F}\leq\thetam\}
+ \frac{\xi_{\rm FU}W_{0,i}^{\rm F}/r_{\rm SU}(\Theta_{0,i}^{\rm F})^2}
+ {1+I_{{\rm F},i}}.
+ \label{eq:follower-sinr}
+\end{equation}
+leader--follower 星间链路保持方向性或正交，SNR 为
+\begin{equation}
+ \SNR_{{\rm LF},i}
+ =
+ \frac{\xi_{\rm LF}}{r_{\rm LF}(\Psi_{0,i})^2}.
+\end{equation}
+
+\section{接入覆盖与端到端覆盖}
+
+接入覆盖只判断用户侧是否存在可解码的地面分支：
+\begin{equation}
+ P_{\rm cov}^{\rm access}(\gamma)
+ =
+ \Prob\left[
+ \max\{\SINR_{\rm LU},\SINR_{{\rm FU},1},\ldots,\SINR_{{\rm FU},\NF}\}
+ \geq\gamma
+ \right].
+ \label{eq:access-coverage}
+\end{equation}
+
+对于译码转发中继，follower 分支只有在星间链路和地面链路都满足门限时才可用。
+因此端到端覆盖定义为
+\begin{equation}
+\begin{split}
+ P_{\rm cov}^{\rm e2e}(\gamma,\gamma_{\rm LF})
+ =
+ \Prob\bigg[
+ &\SINR_{\rm LU}\geq\gamma\\
+ &\ \ \text{或存在 }i:
+ \SINR_{{\rm FU},i}\geq\gamma,\,
+ \SNR_{{\rm LF},i}\geq\gamma_{\rm LF}
+ \bigg].
+\end{split}
+\label{eq:e2e-coverage}
+\end{equation}
+由事件包含关系必有
+\begin{equation}
+ P_{\rm cov}^{\rm e2e}\leq P_{\rm cov}^{\rm access}.
+\end{equation}
+该关系被作为自动测试中的硬约束。
+
+\section{平均速率与全网吞吐}
+
+正交资源下，leader 与 follower 地面分支均使用式 \eqref{eq:rb-bandwidth} 的带宽。
+cluster rate 为
+\begin{equation}
+\begin{split}
+ R_{\rm cl}
+ =
+ &B_{\rm RB}\log_2(1+\SINR_{\rm LU})\\
+ &+
+ \sum_{i=1}^{\NF}
+ \min\left\{
+ B_{\rm LF}\log_2(1+\SNR_{{\rm LF},i}),
+ B_{\rm RB}\log_2(1+\SINR_{{\rm FU},i})
+ \right\}.
+\end{split}
+\label{eq:cluster-rate}
+\end{equation}
+式 \eqref{eq:cluster-rate} 同时体现三类约束：固定总地面带宽、地面同频干扰和两跳中继
+瓶颈。由于当前模型未定义用户点过程、每 cluster 业务到达与调度，不能从典型用户速率
+严格推出真实全网吞吐。本文只定义“每 cluster 有一个已调度代表用户”条件下的聚合吞吐
+代理
+\begin{equation}
+ T_{\rm proxy}=\NL\E[R_{\rm cl}],
+\end{equation}
+以及按地球表面积和总地面带宽归一化的球面频谱效率代理
+\begin{equation}
+ \eta_{\rm sph,proxy}
+ =
+ \frac{T_{\rm proxy}}{4\pi\Rearth^2B_{\rm G}}.
+\end{equation}
+这些指标表示所有 clusters 在各自已分配资源上工作时的比较性代理；$p_{\rm act}$ 只控制
+同频重叠概率，不再额外乘作全局 duty cycle。其解释必须与覆盖概率联合进行，不能仅
+依据 $T_{\rm proxy}$ 的增长判断网络设计优劣。
+
+\section{条件矩与半解析近似}
+
+为降低参数扫描成本，对每个资源块的条件聚合干扰进行 Gamma 矩匹配。以 leader 资源块
+为例，给定 $\Theta_0=\theta_0$，单个非服务 leader 的一、二阶原点矩为
+\begin{align}
+ m_1(\theta_0)
+ &=
+ qg_{\rm I}\xi_{\rm LU}\E[W]
+ \int_{\theta_0}^{\thetam}
+ \frac{\sin\theta}{1+\cos\theta_0}
+ \frac{\dd\theta}{r_{\rm SU}(\theta)^2},\\
+ m_2(\theta_0)
+ &=
+ q(g_{\rm I}\xi_{\rm LU})^2\E[W^2]
+ \int_{\theta_0}^{\thetam}
+ \frac{\sin\theta}{1+\cos\theta_0}
+ \frac{\dd\theta}{r_{\rm SU}(\theta)^4}.
+\end{align}
+聚合干扰条件均值与方差为
+\begin{align}
+ \mu_I(\theta_0)&=(\NL-1)m_1(\theta_0),\\
+ v_I(\theta_0)&=(\NL-1)\left[m_2(\theta_0)-m_1(\theta_0)^2\right].
+\end{align}
+使用
+\begin{equation}
+ I\mid\theta_0
+ \approx
+ \operatorname{Gamma}
+ \left(
+ k_I=\frac{\mu_I^2}{v_I},
+ \beta_I=\frac{v_I}{\mu_I}
+ \right).
+\end{equation}
+follower 资源块采用同样方法，但 parent-leader 积分上限为
+$\thetam+\thetac$，并对 $(\Psi,\Phi)$ 与 follower 可见性联合积分。
+
+leader 分支的半解析覆盖为
+\begin{equation}
+\begin{split}
+ P_{\rm cov}^{\rm LU}(\gamma)
+ \approx
+ \int_0^{\thetam}\int_0^\infty
+ \bar F_W
+ \left(
+ \frac{\gamma(1+i)r_{\rm SU}(\theta)^2}{\xi_{\rm LU}}
+ \right)
+ f_{I\mid\Theta_0}(i\mid\theta)
+ f_{\Theta_0\mid{\rm vis}}(\theta)
+ \dd i\dd\theta.
+\end{split}
+\label{eq:semi-coverage}
+\end{equation}
+外层使用 Gauss--Legendre 积分，Gamma 干扰积分使用 generalized
+Gauss--Laguerre 积分。完整 cluster coverage 与 rate 使用 Monte Carlo，因为它们包含
+多个 follower 分支、星间瓶颈和分支最大值事件。完整几何 Monte Carlo 在 leader
+资源块和所有 follower 资源块之间共享同一组外部 parent-leader 几何，仅对各资源块的
+活动、follower 偏移与衰落独立采样，从而保留跨资源块的几何相关性。
+
+\section{场景定义与验证要求}
+
+\begin{table}[htbp]
+\centering
+\caption{主要数值场景}
+\begin{tabular}{llll}
+\toprule
+场景 & 资源模型 & $(K_{\rm reuse},p_{\rm act})$ & $G_{\rm I,dB}$\\
+\midrule
+Noise-limited & 正交，无集群间干扰 & -- & --\\
+Orthogonal, reuse 1 & 固定总带宽，集群间全复用 & $(1,1)$ & $0$\\
+Coordinated & 固定总带宽，复用与稀疏活动 & $(3,0.5)$ & $-20$\\
+Full reuse + SIC & 每分支全带宽，理想服务 SIC & $(1,1)$ & $0$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+数值结果必须满足：
+\begin{enumerate}[leftmargin=2em]
+  \item 关闭干扰时所有干扰量严格为零；
+  \item 端到端覆盖不高于接入覆盖；
+  \item 增大复用因子、降低活动概率或降低干扰耦合增益时，条件平均干扰不增加；
+  \item 修正后的模型包含 parent leader 不可见但 follower 可见的边界干扰；
+  \item Gamma 矩匹配与完整几何 Monte Carlo 的关键速率和端到端覆盖误差低于预设阈值；
+  \item 半解析 leader coverage 与完整几何 Monte Carlo 在扫描门限内保持一致；
+  \item 所有概率位于 $[0,1]$，速率与 SINR 非负且有限。
+\end{enumerate}
+
+这些约束由 \path{tests/test_sinr_model.py} 与
+\path{src/sinr_model.py} 中的 validation gate 自动检查。
+
+\section{适用范围}
+
+本模型明确研究固定位置快照下的地面下行 SINR。轨道动力学、编队维持成本、切换和业务
+到达过程属于更高层时空模型，不在本 SINR 推导中隐式近似。干扰耦合增益、复用因子和
+活动概率通过敏感性分析显式扫描，因此结果不是只依赖单一极端同频假设。当前仍采用
+球面 BPP、统一干扰耦合增益、均匀资源划分和每 follower 独立可用的方向性 ISL 资源；
+它们是可审计的研究边界，不应被解释为真实星座调度、波束图或动态业务的最终模型。
+上述边界使本文结论能够被准确解释，也为后续加入波束图、调度和轨道动态提供清晰接口。
+
+\end{document}

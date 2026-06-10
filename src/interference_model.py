@@ -103,8 +103,6 @@ def _aggregate_interference(
         count = min(ip.leader_chunk, n_other - start)
         cos_t = _sample_other_leader_cos(cos_theta0, count, rng)
         mask = cos_t >= cos_visible
-        if not mask.any():
-            continue
         theta = np.arccos(np.clip(cos_t, -1.0, 1.0))
         if ip.include_leader_interference:
             w_l = sample_fading(theta.shape, p, rng)
@@ -117,7 +115,9 @@ def _aggregate_interference(
                 w_f = sample_fading(theta.shape, p, rng)
                 follower_visible = _cos_follower_contact(theta, psi, phi) >= cos_visible
                 acc += follower_visible * xi_fu(p) * w_f / (r_fu(theta, psi, phi, p) ** 2)
-            i_f += np.sum(mask * (p.n_followers / k_follow) * acc, axis=1)
+            # A follower can be visible even when its parent leader is just
+            # outside the visibility boundary.  Do not apply the leader mask.
+            i_f += np.sum((p.n_followers / k_follow) * acc, axis=1)
     return i_l, i_f, i_l + i_f
 
 
@@ -255,7 +255,11 @@ def mean_interference_coefficients(
         cond_pdf = np.sin(theta) / (1.0 + math.cos(theta0))
         leader_one = np.sum(wtheta * cond_pdf * xi_lu(p) * ew / (r_su(theta, p) ** 2))
         follower_one = 0.0
-        for th, ww in zip(theta, wtheta * cond_pdf):
+        follower_end = min(math.pi, visible + p.theta_cap_rad)
+        theta_f = 0.5 * (follower_end - theta0) * (xt + 1.0) + theta0
+        wtheta_f = 0.5 * (follower_end - theta0) * wt
+        cond_pdf_f = np.sin(theta_f) / (1.0 + math.cos(theta0))
+        for th, ww in zip(theta_f, wtheta_f * cond_pdf_f):
             cos_contact = _cos_follower_contact(th, psi_grid, phi_grid)
             visible_mask = cos_contact >= math.cos(visible)
             dist = r_fu(th, psi_grid, phi_grid, p)
