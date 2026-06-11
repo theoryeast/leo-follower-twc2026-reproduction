@@ -90,6 +90,8 @@ def compare_pair(name: str) -> dict[str, float | str]:
         return {"figure": name, "status": "missing generated image"}
     ref = trim_white_border(Image.open(ref_path).convert("RGB"))
     gen = trim_white_border(Image.open(gen_path).convert("RGB"))
+    ref_ratio = ref.width / ref.height
+    gen_ratio = gen.width / gen.height
     gen_resized = gen.resize(ref.size, Image.Resampling.LANCZOS)
     ref_arr = np.asarray(ref, dtype=np.float32)
     gen_arr = np.asarray(gen_resized, dtype=np.float32)
@@ -116,10 +118,13 @@ def compare_pair(name: str) -> dict[str, float | str]:
         "status": "compared",
         "reference_size": f"{ref.width}x{ref.height}",
         "generated_size": f"{gen.width}x{gen.height}",
+        "reference_ratio": ref_ratio,
+        "generated_ratio": gen_ratio,
+        "ratio_relative_error": abs(gen_ratio - ref_ratio) / ref_ratio,
         "rmse": rmse,
         "mae": mae,
         "max_abs": max_abs,
-        "side_by_side": composite_path.relative_to(ROOT).as_posix(),
+        "side_by_side": composite_path.name,
     }
 
 
@@ -131,15 +136,15 @@ def write_report(rows: list[dict[str, float | str]]) -> None:
         "",
         "Reference crops are extracted from the paper PDF for local visual QA only. Generated figures are produced independently by the reproduction code.",
         "",
-        "| Figure | Status | Ref size | Gen size | RMSE | MAE | Max abs | Side by side |",
-        "|---|---:|---:|---:|---:|---:|---:|---|",
+        "| Figure | Status | Ref size | Gen size | Ref ratio | Gen ratio | Ratio err. | RMSE | MAE | Max abs | Side by side |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for row in rows:
         if row.get("status") != "compared":
-            lines.append(f"| {row['figure']} | {row['status']} | | | | | | |")
+            lines.append(f"| {row['figure']} | {row['status']} | | | | | | | | | |")
             continue
         lines.append(
-            "| {figure} | {status} | {reference_size} | {generated_size} | {rmse:.2f} | {mae:.2f} | {max_abs:.1f} | [{figure}]({side_by_side}) |".format(
+            "| {figure} | {status} | {reference_size} | {generated_size} | {reference_ratio:.3f} | {generated_ratio:.3f} | {ratio_relative_error:.1%} | {rmse:.2f} | {mae:.2f} | {max_abs:.1f} | [{figure}]({side_by_side}) |".format(
                 **row
             )
         )
@@ -150,6 +155,7 @@ def write_report(rows: list[dict[str, float | str]]) -> None:
             "",
             "- Pixel metrics are advisory because the paper was rendered from PDF fonts and the reproduction uses local Matplotlib fonts.",
             "- Required visual checks: axis ranges, log/linear scale, legend location, marker family, color family, and curve ordering.",
+            "- Fig.2-Fig.8 use dedicated canvases so their trimmed aspect ratios match the independently cropped paper figures.",
             "- Fig.7 uses a deterministic calibration for the paper's under-specified power-allocation case study; the CSV records the plotted values.",
         ]
     )

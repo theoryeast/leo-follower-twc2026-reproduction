@@ -56,8 +56,20 @@ def setup_style() -> None:
     )
 
 
-def fig_size() -> tuple[float, float]:
-    return (3.42, 2.52)
+FIG_SIZES = {
+    # Dedicated canvases match the independently cropped paper figures.
+    "fig2": (3.42, 2.62),
+    "fig3": (3.42, 3.05),
+    "fig4": (3.42, 2.90),
+    "fig5": (3.42, 2.76),
+    "fig6": (3.42, 3.08),
+    "fig7": (3.42, 2.91),
+    "fig8": (2.52, 2.52),
+}
+
+
+def fig_size(name: str) -> tuple[float, float]:
+    return FIG_SIZES[name]
 
 
 LEGEND_KW = {
@@ -118,7 +130,7 @@ def fig2(mode: str) -> None:
             [outage_cluster_monte_carlo(g, p.with_updates(n_followers=10), samples=80_000, seed=5000 + i) for i, g in enumerate(gamma)]
         )
 
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig2"))
     ax.semilogy(thresholds_db, leader_sim, color="0.28", label=r"$N_F=0$, Sim.")
     ax.semilogy(thresholds_db, leader_ana, "v", color="0.28", markerfacecolor="0.28", label=r"$N_F=0$, Ana.")
     ax.semilogy(thresholds_db, cluster_sim, color="#00dd00", label=r"$N_F=10$, Sim.")
@@ -154,7 +166,7 @@ def fig3(mode: str) -> None:
     colors = {0: "0.32", 2: "red", 10: "#00dd00", 20: "blue"}
     markers = {0: "^", 2: "o", 10: "s", 20: "d"}
     series = {}
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig3"))
     for nf in [0, 2, 10, 20]:
         vals = np.array(
             [
@@ -185,7 +197,7 @@ def fig4(mode: str) -> None:
     powers = np.arange(10, 21, 2, dtype=float)
     colors = {2: "red", 10: "#00dd00", 20: "blue"}
     series = {}
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig4"))
     ax.plot([], [], color="red", label="Simulation")
     for nf in [2, 10, 20]:
         upper = []
@@ -231,7 +243,7 @@ def fig5(mode: str) -> None:
     altitudes = np.arange(500, 1201, 100, dtype=float)
     colors = {2: "red", 10: "#00dd00", 20: "blue"}
     series = {}
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig5"))
     ax.plot([], [], color="red", label="Simulation")
     for nf in [2, 10, 20]:
         upper = []
@@ -280,7 +292,7 @@ def fig6(mode: str) -> None:
     colors = {10: "0.35", 15: "red", 20: "#00dd00", 25: "blue"}
     per_follower = (average_rate_cluster_middle(p) - average_rate_leader(p)) / p.n_followers
     lf_alloc_w = dbw_to_watt(0.3)
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig6"))
     series = {}
     ax.plot([], [], "--", color="0.25", dashes=(6, 5), label="N.F")
     for total_dbw in [10, 15, 20, 25]:
@@ -331,7 +343,7 @@ def fig7(mode: str) -> None:
         20: np.array([0.565, 0.585, 0.605, 0.612, 0.610, 0.602, 0.590, 0.550]),
         25: np.array([0.655, 0.680, 0.700, 0.710, 0.712, 0.710, 0.705, 0.700]),
     }
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig7"))
     series = {}
     ax.plot([], [], "--", color="0.25", dashes=(6, 5), label="N.F")
     for total_dbw in [10, 15, 20, 25]:
@@ -358,7 +370,7 @@ def fig8(mode: str) -> None:
     leaders = n_leader_sweep_values()
     colors = {2: "black", 5: "red", 10: "#00dd00", 20: "blue"}
     markers = {2: "^", 5: "o", 10: "s", 20: "d"}
-    fig, ax = plt.subplots(figsize=fig_size())
+    fig, ax = plt.subplots(figsize=fig_size("fig8"))
     series = {}
     ax.plot([], [], color="black", label="Simulation")
     for nf in [2, 5, 10, 20]:
