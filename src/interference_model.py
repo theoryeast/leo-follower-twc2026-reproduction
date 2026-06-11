@@ -9,10 +9,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 import math
+from pathlib import Path
+import sys
 from typing import Iterable
 
 import numpy as np
 from scipy.integrate import quad
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from src.leo_follower_model import (
     SystemParams,

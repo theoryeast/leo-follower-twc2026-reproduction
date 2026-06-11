@@ -7,8 +7,10 @@ import numpy as np
 from src.leo_follower_model import SystemParams, db_to_linear
 from src.sinr_model import (
     _ground_branch_bandwidths,
+    _ground_branch_noise_scales,
     access_coverage_curve,
     conditional_interference_moments,
+    effective_system_params,
     end_to_end_coverage_curve,
     estimate_boundary_follower_interference_fraction,
     run_sinr_validation,
@@ -48,6 +50,16 @@ class SinrModelTests(unittest.TestCase):
         mu_coord, _ = conditional_interference_moments(p, scenario_params("coordinated"), theta, "leader")
         self.assertTrue(np.all(mu_coord < mu_base))
 
+    def test_interference_moments_do_not_depend_on_seed_or_trial_count(self) -> None:
+        p = SystemParams(n_leaders=300, n_followers=5)
+        theta = np.array([0.01, 0.05, 0.10])
+        base = scenario_params("coordinated", trials=100, seed=1)
+        changed = scenario_params("coordinated", trials=9000, seed=999)
+        mu_base, var_base = conditional_interference_moments(p, base, theta, "leader")
+        mu_changed, var_changed = conditional_interference_moments(p, changed, theta, "leader")
+        self.assertTrue(np.allclose(mu_base, mu_changed))
+        self.assertTrue(np.allclose(var_base, var_changed))
+
     def test_boundary_followers_are_nonzero_interferers(self) -> None:
         fraction = estimate_boundary_follower_interference_fraction(SystemParams(n_leaders=900), samples=100_000, seed=43)
         self.assertGreater(fraction, 0.0)
@@ -82,6 +94,68 @@ class SinrModelTests(unittest.TestCase):
         self.assertEqual(coverage.shape, (2,))
         self.assertTrue(np.all(np.isfinite(coverage)))
         self.assertGreater(rate, 0.0)
+
+    def test_leader_guaranteed_bandwidth_conservation(self) -> None:
+        p = SystemParams(n_followers=5)
+        sp = scenario_params("coordinated", leader_bandwidth_fraction=0.6)
+        bw_l, bw_f = _ground_branch_bandwidths(p, sp)
+        self.assertAlmostEqual(bw_l + p.n_followers * bw_f, p.bandwidth_lu_hz / sp.reuse_factor)
+        self.assertAlmostEqual(bw_l, 0.6 * p.bandwidth_lu_hz / sp.reuse_factor)
+
+    def test_bandwidth_scaled_noise_matches_allocated_bandwidth(self) -> None:
+        p = SystemParams(n_followers=5)
+        sp = scenario_params(
+            "coordinated",
+            leader_bandwidth_fraction=0.6,
+            bandwidth_scaled_noise=True,
+        )
+        bw_l, bw_f = _ground_branch_bandwidths(p, sp)
+        noise_l, noise_f = _ground_branch_noise_scales(p, sp)
+        self.assertAlmostEqual(noise_l, bw_l / p.bandwidth_lu_hz)
+        self.assertAlmostEqual(noise_f, bw_f / p.bandwidth_fu_hz)
+
+    def test_fixed_cluster_total_power_is_conserved(self) -> None:
+        p = SystemParams(n_followers=5)
+        sp = scenario_params(
+            "coordinated",
+            power_model="fixed_cluster_total",
+            cluster_power_dbw=20.0,
+            leader_power_fraction=0.4,
+        )
+        effective = effective_system_params(p, sp)
+        total = 10.0 ** (effective.rho_lu_dbw / 10.0) + p.n_followers * 10.0 ** (effective.rho_fu_dbw / 10.0)
+        self.assertAlmostEqual(total, 10.0 ** (sp.cluster_power_dbw / 10.0), places=10)
+
+    def test_zero_follower_availability_removes_relay_paths(self) -> None:
+        p = SystemParams(n_leaders=300, n_followers=5)
+        samples = simulate_sinr_samples(
+            p,
+            scenario_params("coordinated", trials=300, seed=46, follower_availability_probability=0.0),
+        )
+        self.assertEqual(float(np.max(samples["sinr_fu"])), 0.0)
+        self.assertEqual(float(np.max(samples["rate_relay_bps"])), 0.0)
+        self.assertTrue(np.array_equal(samples["coverage_e2e_default"], samples["sinr_lu"] >= p.gamma_th_linear))
+
+    def test_half_duplex_factor_does_not_increase_rate(self) -> None:
+        p = SystemParams(n_leaders=300, n_followers=5)
+        full = simulate_sinr_samples(p, scenario_params("coordinated", trials=400, seed=47, isl_duplex_factor=1.0))
+        half = simulate_sinr_samples(p, scenario_params("coordinated", trials=400, seed=47, isl_duplex_factor=0.5))
+        self.assertTrue(np.all(half["cluster_rate_bps"] <= full["cluster_rate_bps"] + 1e-9))
+
+    def test_shared_reuse_color_exact_path_is_finite(self) -> None:
+        samples = simulate_sinr_samples(
+            SystemParams(n_leaders=200, n_followers=3),
+            scenario_params(
+                "coordinated",
+                trials=120,
+                seed=48,
+                interference_method="exact",
+                shared_reuse_color=True,
+                follower_availability_probability=0.8,
+            ),
+        )
+        self.assertTrue(np.all(np.isfinite(samples["i_leader_rb"])))
+        self.assertTrue(np.all(np.isfinite(samples["i_follower_rb"])))
 
 
 if __name__ == "__main__":

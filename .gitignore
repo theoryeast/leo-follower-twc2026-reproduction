@@ -14,5 +14,6 @@ __pycache__/
 !figures/generated/*.pdf
 !figures/interference/*.pdf
 !figures/sinr/*.pdf
+!figures/deployment/*.pdf
 figures/reference/
 qa/*_side_by_side.png

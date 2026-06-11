@@ -64,6 +64,14 @@ Generate the authoritative resource-consistent SINR study and run its review gat
 & 'D:\ProgramData\anaconda3\envs\neu\python.exe' 'src\qa_sinr.py'
 ```
 
+Generate the deployment-optimization and resource-consistency study:
+
+```powershell
+& 'D:\ProgramData\anaconda3\envs\neu\python.exe' 'src\reproduce_deployment_figures.py' --all --mode final
+& 'D:\ProgramData\anaconda3\envs\neu\python.exe' 'src\qa_d2_stability.py' --repeats 5 --mode final
+& 'D:\ProgramData\anaconda3\envs\neu\python.exe' 'src\qa_deployment.py'
+```
+
 Compile the interference derivation and results reports from the `theory`
 folder so relative figure paths resolve:
 
@@ -84,6 +92,17 @@ Push-Location theory
 & 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'sinr_comprehensive_derivation.tex'
 & 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'sinr_results_analysis.tex'
 & 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'sinr_results_analysis.tex'
+Pop-Location
+```
+
+Compile the target-level detailed derivation and deployment results analysis:
+
+```powershell
+Push-Location theory
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'resource_consistent_sinr_full_derivation_v1.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'resource_consistent_sinr_full_derivation_v1.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'deployment_results_analysis.tex'
+& 'D:\MiKTeX\texmfs\install\miktex\bin\x64\xelatex.exe' -interaction=nonstopmode -halt-on-error 'deployment_results_analysis.tex'
 Pop-Location
 ```
 
@@ -120,6 +139,18 @@ Authoritative resource-consistent SINR outputs:
 - `figures/sinr/` and `figures/sinr_data/`: final figures and traceable CSV values.
 - `tests/test_sinr_model.py`: executable mathematical and implementation checks.
 - `qa/sinr_comprehensive_review_report.md`: final automated review report.
+
+Target-level derivation and deployment-study outputs:
+
+- `theory/resource_consistent_sinr_full_derivation_v1.tex`: 31-page Chinese detailed derivation with complete system model, bandwidth-scaled thermal-noise model, joint interference analysis, coverage/rate derivations, P1/P2, and statistically robust deployment definition.
+- `theory/deployment_results_analysis.tex`: Chinese Fig.D1-Fig.D8 analysis, design rules, conclusions, and scope limits.
+- `src/deployment_optimization_model.py`: symmetric bandwidth optimization, fixed-cluster-power model, Wilson confidence constraints, independent validation, and parsimonious follower selection.
+- `src/reproduce_deployment_figures.py`: Fig.D1-Fig.D8 generation entry point.
+- `figures/deployment/` and `figures/deployment_data/`: generated deployment figures and traceable CSV values.
+- `src/qa_deployment.py` and `qa/deployment_review_report.md`: executable deployment-study review gate and generated report.
+- `src/qa_d2_stability.py` and `qa/d2_selection_stability_report.md`: repeated-seed audit that reports the finite-sample selection range around Fig.D2.
+- `qa/full_derivation_v1_audit.md`: requirement-to-artifact audit for the detailed derivation.
+- `qa/goal_completion_audit.md`: requirement-by-requirement evidence matrix for `目标.txt`, including explicit completion boundaries.
 
 Fig.I1-Fig.I5 are retained only as an extreme all-cochannel lower benchmark.
 Fig.S1-Fig.S8 are the main research results because they include fixed total
@@ -159,3 +190,14 @@ Final SINR-study anchors:
 - At weak isolation, reuse improves coverage but pays an explicit `1/K` bandwidth cost.
 - Moment-matched rate differs from shared-geometry exact Monte Carlo by less than 3% in the validation gate.
 - The remaining scope limits are BPP snapshot geometry, scalar interference coupling, uniform resource allocation, and directional/orthogonal ISL resources.
+
+Deployment-study anchors:
+
+- Deployment figures use thermal noise proportional to allocated branch bandwidth under fixed link total transmit power. The earlier Fig.S1-Fig.S8 remain on the fixed-reference-noise convention for version compatibility.
+- Fig.D2 uses the explicit `-5 dB` end-to-end threshold, fixed ground-downlink cluster total power, Wilson 95% coverage lower bound `>= 0.99`, independent validation-based rate reselection, a 3% feasible-rate tolerance, and a final exact-geometry shared-reuse-color audit.
+- All selected Fig.D2 designs must pass the `0.99` lower-bound constraint in the independent validation and exact correlated-audit samples; the independent validation rate must also remain within 3% of its recomputed feasible maximum.
+- The repeated-seed Fig.D2 audit reports a near-optimal selection range rather than hiding discrete-choice uncertainty; a final point outside that marginal-model range is accepted only when the exact correlated audit explicitly rejects smaller candidates.
+- Fig.D3 shows why the power convention is decisive: average rate increases with followers under fixed per-satellite power but decreases under fixed cluster total power.
+- Fig.D6 retains shared reuse-color interference correlation; Fig.D7 separates follower availability from ISL duplex-rate loss.
+- Fig.D8 closes the remaining visibility-angle, fixed-cluster-power, and ISL-threshold sensitivity checks.
+- Fig.D2 is a statistically robust parsimonious design on the documented finite follower/bandwidth grid and preset coordination scenarios; it is not a claim of continuous-space global optimality.

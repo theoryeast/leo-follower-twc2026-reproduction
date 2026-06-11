@@ -1,0 +1,2348 @@
+\documentclass[UTF8,a4paper,11pt]{ctexart}
+\usepackage[margin=2.0cm]{geometry}
+\usepackage{amsmath,amssymb,amsthm,bm,mathtools}
+\usepackage{booktabs,longtable,array,multirow}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric}
+
+\hypersetup{colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue}
+\setlength{\parindent}{2em}
+\setlength{\parskip}{0.20em}
+\allowdisplaybreaks[4]
+
+\newtheorem{assumption}{假设}[section]
+\newtheorem{definition}{定义}[section]
+\newtheorem{lemma}{引理}[section]
+\newtheorem{theorem}{定理}[section]
+\newtheorem{corollary}{推论}[section]
+\newtheorem{proposition}{命题}[section]
+\newtheorem{remark}{备注}[section]
+\renewcommand{\proofname}{证明}
+
+\newcommand{\E}{\mathbb E}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\Cov}{\operatorname{Cov}}
+\newcommand{\Prob}{\mathbb P}
+\newcommand{\dd}{\,\mathrm d}
+\newcommand{\ind}{\mathbf 1}
+\newcommand{\NL}{N_{\mathrm L}}
+\newcommand{\NF}{N_{\mathrm F}}
+\newcommand{\SINR}{\operatorname{SINR}}
+\newcommand{\SNR}{\operatorname{SNR}}
+\newcommand{\Rearth}{R_{\oplus}}
+\newcommand{\Rsat}{R_{\mathrm S}}
+\newcommand{\thetam}{\theta_{\max}}
+\newcommand{\thetac}{\theta_{\mathrm{cap}}}
+\newcommand{\Lcal}{\mathcal L}
+\newcommand{\Gcal}{\mathcal G}
+\newcommand{\Qcal}{\mathcal Q}
+\newcommand{\Rcal}{\mathcal R}
+\newcommand{\Btot}{B_{\mathrm{tot}}}
+\newcommand{\Bcl}{B_{\mathrm{cl}}}
+\newcommand{\Pe}{P_{\mathrm{e2e}}}
+\newcommand{\Pa}{P_{\mathrm{access}}}
+\newcommand{\Rbar}{\overline R}
+\newcommand{\bvec}{\bm b}
+\newcommand{\avec}{\bm a}
+\newcommand{\svec}{\bm s}
+\newcommand{\Ivec}{\bm I}
+\newcommand{\Gvec}{\bm{\mathcal G}}
+\newcommand{\Zvec}{\bm Z}
+\newcommand{\Simplex}{\Delta}
+
+\title{固定总资源与密集复用约束下跟随式 LEO 卫星网络\\
+完整理论推导（第一版）}
+\author{资源一致 SINR、端到端可靠性与部署优化}
+\date{\today}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+\begin{abstract}
+本文在跟随式低轨卫星网络的球面二项点过程模型上，建立一个固定总带宽、功率可审计、
+集群内正交、集群间复用且显式保留共享干扰相关性的完整分析框架。研究主线是：
+在固定总资源和密集复用约束下，继续增加跟随星并不必然提高单集群平均速率；
+其主要价值可能表现为端到端可靠性提升，而最优部署由跟随星数量、频率复用、
+波束隔离、同频活动概率、带宽与功率分配以及星间链路瓶颈共同决定。
+
+为避免把不同资源块上的干扰错误地合并为同一个标量，本文首先推导正交资源模型下的
+相关干扰向量联合 Laplace 变换，再分别给出接入覆盖、译码转发端到端覆盖、资源一致
+集群速率、网络吞吐代理和球面频谱效率。随后形式化覆盖约束速率最大化与最低速率约束
+可靠性最大化问题，定义最优跟随星数量，并给出完整几何 Monte Carlo、联合半解析计算、
+矩匹配参数扫描、置信区间、稀有事件处理和复杂度分析。全文明确区分可严格推出的结论、
+近似结论和当前模型边界。
+\end{abstract}
+
+\section{研究主线、贡献与适用边界}
+
+\subsection{核心研究问题}
+
+考虑由 $\NL$ 个 leader clusters 构成的 LEO 下行网络，每个 cluster 包含一个 leader 和
+$\NF$ 个 followers。若忽略固定总资源约束，则增加 follower 同时增加服务分支、发射功率
+和可用带宽，所得增益无法归因。若把所有外部卫星无条件放入同一个干扰和式，又会把本应
+位于不同资源块上的信号错误地视为同频。因此，本文依次回答下列问题：
+\begin{enumerate}[leftmargin=2em]
+  \item 在固定总地面带宽下，leader 与 followers 如何分配资源，频率复用如何同时改变
+  带宽和同频干扰密度？
+  \item 给定最近 leader 服务规则后，非服务 clusters 及其 followers 的条件球面分布如何
+  推导，尤其如何保留 ``parent leader 不可见但 follower 可见'' 的边界贡献？
+  \item 正交资源块上的干扰不是同一个标量，但由于共享外部 parent-leader 几何而相关。
+  如何写出该相关干扰向量的联合 Laplace 变换？
+  \item 接入覆盖、译码转发端到端覆盖和资源一致速率如何严格区分？
+  \item 在固定单星功率与固定集群总功率两种公平性口径下，如何选择
+  $\NF$、复用因子、带宽和功率分配？
+\end{enumerate}
+
+\subsection{本文贡献}
+
+\begin{enumerate}[leftmargin=2em]
+  \item 建立固定总带宽和两类功率一致性模型，并包含均匀分配、leader 保底分配和覆盖约束
+  最优分配。
+  \item 从球面面积测度出发，逐步推导最近服务 leader、条件非服务 leader、cluster 内
+  follower 偏移、follower 接触角和可见性修正。
+  \item 推导正交资源模型下相关干扰向量的联合 Laplace 变换，并把极端全同频共同干扰
+  作为独立的下界基准，而不是与主模型混用。
+  \item 给出接入覆盖、端到端 relay coverage、平均速率、分位数速率、网络吞吐代理和
+  球面频谱效率的完整表达式。
+  \item 把部署选择写成两个正式混合整数优化问题，证明有限扫描域内最优解存在，并定义
+  $N_{\mathrm F}^{\star}$ 相图。
+  \item 给出 Monte Carlo、联合半解析、矩匹配和大规模参数扫描的验证门禁、统计置信度与
+  复杂度。
+\end{enumerate}
+
+\subsection{建模假设与结论边界}
+
+\begin{assumption}[快照球面 BPP]
+所有 leaders 在半径 $\Rsat=\Rearth+h$ 的卫星球面上独立均匀分布，构成固定点数的球面
+二项点过程。本文研究某一时刻的空间快照，不包含轨道传播、切换和时间相关性。
+\end{assumption}
+
+\begin{assumption}[典型已调度用户]
+典型用户固定在地球北极，并由最近的可见 leader cluster 服务。主要链路指标均条件于
+该用户已被调度。由于未引入用户点过程、业务到达和完整调度器，网络级指标是可比较的
+吞吐代理，而不是真实运营网络总吞吐。
+\end{assumption}
+
+\begin{assumption}[资源和 ISL]
+主模型采用集群内地面资源正交、集群间同图样复用。leader--follower 星间链路使用高
+方向性或独立频段，主模型中不产生地面同频干扰；它仍通过译码转发瓶颈、双工系数和
+门限影响端到端性能。
+\end{assumption}
+
+\begin{assumption}[有效干扰耦合]
+真实天线旁瓣、波束指向误差、极化失配和调度隔离被压缩为可扫描的有效干扰耦合
+$g_{\mathrm I}$。因此本文能够给出机制和设计边界，但不能替代真实星座波束图与动态调度
+仿真。
+\end{assumption}
+
+\begin{remark}
+上述边界被前置，是为了防止把 ``在球面 BPP 快照和有效耦合参数下成立'' 的结论误写为
+``对任意真实星座均成立''。后续所有定理均以这些假设为前提。
+\end{remark}
+
+\section{相关工作与本文定位}
+
+LEO 随机几何分析通常从最近卫星距离、可见球面帽和聚合干扰 Laplace 变换出发。
+Okati 等建立了 LEO 星座下行覆盖与速率的经典随机几何框架
+\cite{okati2020downlink}；Talgat 等进一步给出球面 BPP 最近邻与 LEO 通信分析
+\cite{talgat2020nearest,talgat2021stochastic}。这些工作为本文的最近服务 leader
+条件分布和干扰分析提供基础，但其服务对象通常是单卫星分支，而不是包含 leader--follower
+译码转发瓶颈的集群。
+
+针对卫星集群，Jung 等总结了 satellite clustering 的概念、架构与应用
+\cite{jung2023concept}；Lee 等使用随机几何研究 clustered LEO constellation 的下行
+覆盖，并显式处理 cluster 内卫星产生的聚合干扰 \cite{lee2024clustered}。这些研究说明
+cluster 几何与干扰不能被单卫星模型替代，但没有同时解决固定总地面带宽、端到端 relay
+coverage、集群间公共复用颜色相关性和覆盖约束部署优化。
+
+与本文直接相关的原 follower-based TWC 工作由 Ru、Wang 和 Alouini 提出
+\cite{ru2026follower}。该工作在球面随机几何框架下推导 leader-follower 架构的 outage
+probability、average data rate 及低复杂度近似，证明 followers 在其噪声受限和给定分支
+资源口径下具有明显性能优势。本文不是否定该结论，而是研究其在密集复用、固定总资源和
+功率公平性约束下的适用边界：当外部 clusters 产生同频干扰、多个服务分支共享有限带宽
+且 follower 分支还受 ISL 限制时，followers 的主要价值可能由平均速率增益转变为可靠性
+增益。
+
+更广泛地，球面随机几何综述指出 BPP/PPP 快照模型适合获得可解释闭式或半解析结果，但
+真实轨道结构、非均匀星座和动态调度仍需更细模型验证 \cite{wang2025survey}。因此本文
+采用``详细推导 + 完整几何 Monte Carlo + 独立统计复验 + 明确结论边界''的路线，并把
+真实星历和波束级验证保留为后续工作。
+
+\section{完整系统模型图与符号}
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  scale=0.92,
+  sat/.style={draw,fill=blue!8,minimum width=1.35cm,minimum height=0.52cm},
+  fol/.style={draw,fill=green!10,minimum width=1.15cm,minimum height=0.48cm},
+  usr/.style={draw,circle,fill=orange!15,minimum size=0.72cm},
+  box/.style={draw,dashed,rounded corners=2pt,inner sep=4pt},
+  desired/.style={-{Stealth[length=2mm]},very thick,blue},
+  isl/.style={-{Stealth[length=2mm]},very thick,green!50!black},
+  interf/.style={-{Stealth[length=2mm]},red,dashed},
+  note/.style={font=\small,align=center}
+]
+\draw[thick] (-6,-1.7) arc[start angle=165,end angle=15,radius=6.2cm];
+\node[note] at (0,-2.2) {地球表面，典型已调度用户位于北极方向};
+\node[usr] (u) at (0,-1.25) {U};
+
+\node[sat] (l0) at (0,3.05) {服务 leader};
+\node[fol] (f01) at (-2.25,2.05) {follower 1};
+\node[fol] (f02) at (2.25,2.05) {follower $N_{\rm F}$};
+\node[box,fit=(l0)(f01)(f02),label={[note]above:服务 cluster；球冠半径 $\theta_{\rm cap}$}] {};
+
+\node[sat] (l1) at (-5.2,3.35) {外部 leader};
+\node[fol] (f11) at (-6.2,2.35) {同块 follower};
+\node[box,fit=(l1)(f11),label={[note]above:非服务 cluster}] {};
+
+\node[sat] (l2) at (5.2,3.35) {外部 leader};
+\node[fol] (f21) at (6.25,2.35) {同块 follower};
+\node[box,fit=(l2)(f21),label={[note]above:非服务 cluster}] {};
+
+\draw[desired] (l0) -- node[right,pos=0.58,note] {$b_{\rm L}\Bcl$；LU} (u);
+\draw[desired] (f01) -- node[left,sloped,pos=0.52,note] {$b_{{\rm F},1}\Bcl$；FU} (u);
+\draw[desired] (f02) -- (u);
+\draw[isl] (l0) -- node[above,sloped,pos=0.58,note] {ISL/DF} (f01);
+\draw[isl] (l0) -- node[above,sloped,pos=0.58,note] {ISL/DF} (f02);
+\draw[interf] (l1) -- node[left,sloped,pos=0.55,note] {$g_{\rm I},p_{\rm act},K$} (u);
+\draw[interf] (f11) -- (u);
+\draw[interf] (l2) -- (u);
+\draw[interf] (f21) -- (u);
+\draw[dotted,thick] (-4.6,-0.65) arc[start angle=160,end angle=20,radius=4.9cm];
+\node[note] at (3.55,0.12) {可见区域边界 $\theta_{\max}$};
+
+\node[note,draw,align=left] at (0,-3.05) {
+集群内：不同地面资源块正交；\quad 集群间：相同资源块图样复用；\\
+外部 parent-leader 几何在各资源块间共享，因此干扰向量相关。
+};
+\end{tikzpicture}
+\caption{固定总资源下的跟随式 LEO 网络系统模型。红色虚线仅表示与目标资源块同频重叠的
+外部发射；正交资源主模型中的各分支干扰为相关向量，而不是同一个标量。}
+\label{fig:system-model}
+\end{figure}
+
+\begin{table}[htbp]
+\centering
+\caption{核心符号}
+\begin{tabular}{p{0.24\linewidth}p{0.68\linewidth}}
+\toprule
+符号 & 含义\\
+\midrule
+$\Rearth,\Rsat,h$ & 地球半径、卫星球面半径和轨道高度，$\Rsat=\Rearth+h$\\
+$\NL,\NF$ & leader clusters 数量、每 cluster 的 follower 数量\\
+$\thetam,\thetac$ & 用户最大可见接触角、follower 相对 parent leader 的球冠半径\\
+$\Theta_0$ & 典型用户至服务 leader 的最近接触角\\
+$\Theta_j,\Psi_{j,i},\Phi_{j,i}$ & 外部 leader 接触角和其第 $i$ 个 follower 的球冠偏移\\
+$K,p_{\rm act},g_{\rm I}$ & 复用因子、条件同频活动概率和有效干扰耦合\\
+$\Btot,\Bcl,\bvec$ & 地面总带宽、单复用颜色下的 cluster 带宽和带宽分配向量\\
+$P_{\rm cl},\avec$ & 固定集群总功率和功率分配向量\\
+$\Ivec$ & 正交资源模型中各服务分支看到的相关干扰向量\\
+$\gamma,\gamma_{\rm LF}$ & 地面链路和星间链路解码门限\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{固定总带宽与功率一致性}
+
+\subsection{一般带宽分配模型}
+
+\begin{definition}[复用后 cluster 可用带宽]
+系统拥有固定地面总带宽 $\Btot$。若采用整数复用因子 $K\geq 1$，则每个复用颜色占用
+$\Btot/K$，一个 cluster 使用其中一个颜色，故
+\begin{equation}
+ \Bcl=\frac{\Btot}{K}.
+ \label{eq:bcl}
+\end{equation}
+\end{definition}
+
+令带宽分配向量为
+\begin{equation}
+ \bvec=(b_{\rm L},b_{{\rm F},1},\ldots,b_{{\rm F},\NF}),
+ \qquad b_r\geq 0,
+ \qquad b_{\rm L}+\sum_{i=1}^{\NF}b_{{\rm F},i}=1.
+ \label{eq:bandwidth-simplex}
+\end{equation}
+因此各地面链路带宽为
+\begin{equation}
+ B_{\rm LU}=b_{\rm L}\Bcl,\qquad
+ B_{{\rm FU},i}=b_{{\rm F},i}\Bcl.
+ \label{eq:branch-bandwidth}
+\end{equation}
+由式 \eqref{eq:bandwidth-simplex} 立即得到
+\begin{equation}
+ B_{\rm LU}+\sum_{i=1}^{\NF}B_{{\rm FU},i}
+ =\Bcl=\frac{\Btot}{K},
+ \label{eq:bandwidth-conservation}
+\end{equation}
+所以增加 follower 不会凭空增加单 cluster 可用地面带宽。
+
+\subsection{带宽切分下的热噪声一致性}
+
+仅在速率前乘带宽、却继续把所有分支噪声功率固定为同一个数值，会使带宽分配对
+SINR 完全失去作用。为避免这一不一致，设地面接收机的等效单边噪声功率谱密度为
+$N_{0,\rm U}$，参考带宽为 $B_{\rm ref}$，参考噪声功率为
+\begin{equation}
+ \sigma_{\rm U,ref}^2=N_{0,\rm U}B_{\rm ref}.
+ \label{eq:reference-noise}
+\end{equation}
+分支 $r$ 使用带宽 $B_r=b_r\Btot/K$ 时，其热噪声功率为
+\begin{equation}
+ \sigma_{{\rm U},r}^2
+ =N_{0,\rm U}B_r
+ =\nu_r\sigma_{\rm U,ref}^2,
+ \qquad
+ \nu_r=\frac{B_r}{B_{\rm ref}}.
+ \label{eq:bandwidth-scaled-noise}
+\end{equation}
+若取 $B_{\rm ref}=\Btot$，则
+\begin{equation}
+ \nu_{\rm L}=\frac{b_{\rm L}}{K},
+ \qquad
+ \nu_{{\rm F},i}=\frac{b_{{\rm F},i}}{K}.
+ \label{eq:branch-noise-factor}
+\end{equation}
+这表示固定链路总发射功率被放入更窄 RB 时，热噪声随带宽下降；同一 RB 上外部
+干扰链路的总发射功率仍由功率模型决定。若工程系统保持固定功率谱密度而非固定链路
+总功率，则信号功率与干扰功率也应随带宽同比缩放，此时 SINR 对带宽比例近似不变。
+
+\begin{remark}[两种噪声口径]
+本文部署优化主结果采用式 \eqref{eq:bandwidth-scaled-noise}，因为它与固定链路总发射
+功率口径一致。为与原论文表格中给定的固定噪声功率以及前一版 SINR 图兼容，也保留
+$\nu_r=1$ 的固定参考噪声口径。所有图和 CSV 必须显式记录使用哪一种口径。
+\end{remark}
+
+\begin{definition}[三种 cluster 内带宽策略]
+\begin{enumerate}[leftmargin=2em]
+  \item 均匀分配：
+  \begin{equation}
+   b_{\rm L}=b_{{\rm F},i}=\frac{1}{\NF+1}.
+   \label{eq:equal-bandwidth}
+  \end{equation}
+  \item leader 保底分配：给定 $\alpha\in[0,1]$，
+  \begin{equation}
+   b_{\rm L}=\alpha,\qquad
+   b_{{\rm F},i}=\frac{1-\alpha}{\NF},\quad \NF\geq1.
+   \label{eq:alpha-bandwidth}
+  \end{equation}
+  当 $\NF=0$ 时定义 $b_{\rm L}=1$。
+  \item 覆盖约束最优分配：令 $\bvec$ 在概率单纯形
+  \begin{equation}
+   \Simplex_{\NF}
+   =\left\{\bvec\in\mathbb R_+^{\NF+1}:
+   b_{\rm L}+\sum_i b_{{\rm F},i}=1\right\}
+   \label{eq:bandwidth-domain}
+  \end{equation}
+  内由优化问题决定。
+\end{enumerate}
+\end{definition}
+
+\begin{remark}
+复用因子 $K$ 具有两重作用：同频外部 cluster 比例从 $1$ 降为约 $1/K$，但式
+\eqref{eq:bcl} 同时使 cluster 可用带宽付出 $1/K$ 代价。只稀疏干扰而不缩减带宽会高估
+复用收益。
+\end{remark}
+
+\subsection{两类功率一致性模型}
+
+\begin{definition}[模型 A：固定单星功率]
+设 leader 和每个 follower 的地面发射功率分别为常数 $P_{\rm L}^{(0)}$ 和
+$P_{\rm F}^{(0)}$。则
+\begin{equation}
+ P_{\rm cl}^{\rm(A)}
+ =P_{\rm L}^{(0)}+\NF P_{\rm F}^{(0)}.
+ \label{eq:per-satellite-power}
+\end{equation}
+该模型反映 ``增加一颗卫星同时增加一套功放'' 的部署口径。
+\end{definition}
+
+\begin{definition}[模型 B：固定 cluster 总功率]
+给定固定 $P_{\rm cl}$ 和功率分配向量
+\begin{equation}
+ \avec=(a_{\rm L},a_{{\rm F},1},\ldots,a_{{\rm F},\NF})
+ \in\Simplex_{\NF},
+ \label{eq:power-simplex}
+\end{equation}
+定义
+\begin{equation}
+ P_{\rm L}=a_{\rm L}P_{\rm cl},\qquad
+ P_{{\rm F},i}=a_{{\rm F},i}P_{\rm cl}.
+ \label{eq:fixed-cluster-power}
+\end{equation}
+对称 follower 分配时可写成
+\begin{equation}
+ a_{\rm L}=\alpha_P,\qquad
+ a_{{\rm F},i}=\frac{1-\alpha_P}{\NF}.
+ \label{eq:power-alpha}
+\end{equation}
+\end{definition}
+
+\begin{remark}
+模型 A 衡量添加硬件后的总性能，模型 B 隔离纯粹的空间分集和几何收益。若只报告模型 A，
+则 follower 增益可能来自集群总功率随 $\NF$ 增大，而不是 follower 架构本身。
+\end{remark}
+
+\section{球面 BPP 几何：从面积测度开始}
+
+\subsection{单点接触角分布}
+
+将典型用户的地心方向固定为北极。任意 leader 在半径 $\Rsat$ 的球面上均匀分布。接触角
+$\Theta$ 是其地心方向与用户地心方向之间的夹角。
+
+\begin{lemma}[球面帽面积与单 leader 接触角分布]
+半径为 $\Rsat$、角半径为 $\theta$ 的球面帽面积为
+\begin{equation}
+ A_{\rm cap}(\theta)=2\pi\Rsat^2(1-\cos\theta).
+ \label{eq:cap-area}
+\end{equation}
+因此均匀 leader 的接触角 CDF、CCDF 和 PDF 分别为
+\begin{align}
+ F_{\Theta}(\theta)
+ &=\frac{A_{\rm cap}(\theta)}{4\pi\Rsat^2}
+ =\frac{1-\cos\theta}{2},\label{eq:single-cdf}\\
+ \overline F_{\Theta}(\theta)
+ &=\frac{1+\cos\theta}{2},\label{eq:single-ccdf}\\
+ f_{\Theta}(\theta)
+ &=\frac{\sin\theta}{2},\qquad 0\leq\theta\leq\pi.
+ \label{eq:single-pdf}
+\end{align}
+\end{lemma}
+
+\begin{proof}
+在球坐标中，球面面积元为 $\Rsat^2\sin u\,\dd u\,\dd\phi$。积分得到
+\begin{equation}
+\begin{split}
+ A_{\rm cap}(\theta)
+ &=\int_0^{2\pi}\int_0^\theta
+ \Rsat^2\sin u\,\dd u\,\dd\phi\\
+ &=2\pi\Rsat^2[-\cos u]_0^\theta\\
+ &=2\pi\Rsat^2(1-\cos\theta).
+\end{split}
+\end{equation}
+均匀分布意味着落入球面帽的概率等于面积比，故式 \eqref{eq:single-cdf} 成立。
+由 $1-F_{\Theta}$ 得式 \eqref{eq:single-ccdf}，对 CDF 求导得到式
+\eqref{eq:single-pdf}。
+\end{proof}
+
+\subsection{最近服务 leader}
+
+令 $\Theta_1,\ldots,\Theta_{\NL}$ 独立同分布，并定义
+\begin{equation}
+ \Theta_0=\min_{1\leq j\leq\NL}\Theta_j.
+ \label{eq:nearest-angle}
+\end{equation}
+
+\begin{lemma}[最近 leader 的无条件和可见条件分布]
+最近 leader 的 CCDF、CDF 和 PDF 为
+\begin{align}
+ \Prob(\Theta_0>x)
+ &=\left(\frac{1+\cos x}{2}\right)^{\NL},\label{eq:nearest-ccdf}\\
+ F_{\Theta_0}(x)
+ &=1-\left(\frac{1+\cos x}{2}\right)^{\NL},\label{eq:nearest-cdf}\\
+ f_{\Theta_0}(x)
+ &=\frac{\NL}{2}\sin x
+ \left(\frac{1+\cos x}{2}\right)^{\NL-1}.
+ \label{eq:nearest-pdf}
+\end{align}
+至少一个 leader 可见的概率为
+\begin{equation}
+ p_{\rm vis,L}
+ =1-\left(\frac{1+\cos\thetam}{2}\right)^{\NL}.
+ \label{eq:leader-visible-prob}
+\end{equation}
+条件于存在可见服务 leader，
+\begin{equation}
+ f_{\Theta_0\mid{\rm vis}}(x)
+ =
+ \frac{
+ \frac{\NL}{2}\sin x
+ \left(\frac{1+\cos x}{2}\right)^{\NL-1}
+ }{
+ 1-\left(\frac{1+\cos\thetam}{2}\right)^{\NL}
+ },
+ \quad 0\leq x\leq\thetam.
+ \label{eq:serving-conditional-pdf}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+事件 $\{\Theta_0>x\}$ 等价于所有 $\NL$ 个 leaders 均位于角半径 $x$ 的球面帽之外。
+由独立性和式 \eqref{eq:single-ccdf}，
+\begin{equation}
+ \Prob(\Theta_0>x)
+ =\prod_{j=1}^{\NL}\Prob(\Theta_j>x)
+ =\left(\frac{1+\cos x}{2}\right)^{\NL}.
+\end{equation}
+用 $1-\Prob(\Theta_0>x)$ 得 CDF；对 CDF 求导得 PDF。事件 ``存在可见 leader''
+等价于 $\Theta_0\leq\thetam$，代入 CDF 得式 \eqref{eq:leader-visible-prob}。最后由条件
+密度定义
+\begin{equation}
+ f_{\Theta_0\mid{\rm vis}}(x)
+ =\frac{f_{\Theta_0}(x)\ind\{0\leq x\leq\thetam\}}
+ {\Prob(\Theta_0\leq\thetam)}
+\end{equation}
+得到式 \eqref{eq:serving-conditional-pdf}。
+\end{proof}
+
+\subsection{非服务 leaders 的条件分布}
+
+\begin{lemma}[条件非服务 leader 分布]
+\label{lem:nonserving}
+给定最近服务角 $\Theta_0=\theta_0$，任意一个非服务 leader 的接触角 $\Theta$ 条件独立
+同分布于球面帽外部，其 PDF 为
+\begin{equation}
+ f_{\Theta\mid\Theta>\theta_0}(\theta\mid\theta_0)
+ =
+ \frac{\sin\theta}{1+\cos\theta_0},
+ \qquad \theta_0<\theta\leq\pi.
+ \label{eq:nonserving-pdf}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+由条件密度公式，
+\begin{equation}
+\begin{split}
+ f_{\Theta\mid\Theta>\theta_0}(\theta\mid\theta_0)
+ &=
+ \frac{f_{\Theta}(\theta)}
+ {\Prob(\Theta>\theta_0)}\ind\{\theta>\theta_0\}\\
+ &=
+ \frac{\sin\theta/2}{(1+\cos\theta_0)/2}
+ \ind\{\theta>\theta_0\}\\
+ &=
+ \frac{\sin\theta}{1+\cos\theta_0}
+ \ind\{\theta>\theta_0\}.
+\end{split}
+\end{equation}
+归一化可直接验证：
+\begin{equation}
+ \int_{\theta_0}^{\pi}
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta
+ =
+ \frac{[-\cos\theta]_{\theta_0}^{\pi}}{1+\cos\theta_0}
+ =1.
+\end{equation}
+球面 BPP 中各点原本独立；条件于一个点为最近点且其距离为 $\theta_0$ 后，其余点均被
+限制在球面帽外，但在该剩余区域上仍独立均匀，故条件独立性成立。
+\end{proof}
+
+\section{Follower 球冠偏移、接触角与可见性修正}
+
+\subsection{球冠偏移分布}
+
+每个 follower 相对于其 parent leader 独立均匀分布在角半径 $\thetac$ 的球冠内。令
+$\Psi$ 为 follower--parent 的地心夹角，$\Phi$ 为绕 parent 方向的方位角。
+
+\begin{lemma}[均匀球冠偏移分布]
+\begin{align}
+ f_{\Psi}(\psi)
+ &=\frac{\sin\psi}{1-\cos\thetac},
+ \quad 0\leq\psi\leq\thetac,\label{eq:psi-pdf}\\
+ f_{\Phi}(\phi)&=\frac{1}{2\pi},
+ \quad 0\leq\phi<2\pi,\label{eq:phi-pdf}\\
+ f_{\Psi,\Phi}(\psi,\phi)
+ &=\frac{\sin\psi}{2\pi(1-\cos\thetac)}.
+ \label{eq:offset-joint-pdf}
+\end{align}
+\end{lemma}
+
+\begin{proof}
+球冠内环带 $[\psi,\psi+\dd\psi]$ 的面积为
+$2\pi\Rsat^2\sin\psi\,\dd\psi$。除以总球冠面积
+$2\pi\Rsat^2(1-\cos\thetac)$ 得式 \eqref{eq:psi-pdf}。旋转对称性给出均匀方位角
+\eqref{eq:phi-pdf}，二者独立相乘得到联合密度。
+\end{proof}
+
+\subsection{Follower 到用户的接触角}
+
+给定 parent leader 到用户的接触角为 $\theta$，球面余弦定理给出 follower 接触角
+$\Theta^{\rm F}$：
+\begin{equation}
+ \cos\Theta^{\rm F}(\theta,\psi,\phi)
+ =
+ \cos\theta\cos\psi+\sin\theta\sin\psi\cos\phi.
+ \label{eq:follower-contact}
+\end{equation}
+
+\begin{lemma}[条件 follower 接触角 CDF]
+给定 parent 接触角 $\theta$，定义
+\begin{equation}
+ x(t;\theta,\psi)
+ =
+ \frac{\cos t-\cos\theta\cos\psi}
+ {\sin\theta\sin\psi}
+ \label{eq:azimuth-threshold}
+\end{equation}
+并定义方位可见比例
+\begin{equation}
+ v(t;\theta,\psi)=
+ \begin{cases}
+ 1, & x(t;\theta,\psi)\leq-1,\\
+ \dfrac{\arccos x(t;\theta,\psi)}{\pi},
+   & -1<x(t;\theta,\psi)<1,\\
+ 0, & x(t;\theta,\psi)\geq1.
+ \end{cases}
+ \label{eq:azimuth-fraction}
+\end{equation}
+在 $\sin\theta\sin\psi=0$ 的退化点，令
+$v(t;\theta,\psi)=\ind\{\arccos(\cos\theta\cos\psi)\leq t\}$。
+则 follower 条件接触角 CDF 为
+\begin{equation}
+ F_{\Theta^{\rm F}\mid\Theta}(t\mid\theta)
+ =
+ \int_0^{\thetac}
+ v(t;\theta,\psi)
+ \frac{\sin\psi}{1-\cos\thetac}\dd\psi.
+ \label{eq:follower-conditional-cdf}
+\end{equation}
+\end{lemma}
+
+\begin{proof}
+事件 $\Theta^{\rm F}\leq t$ 等价于
+$\cos\Theta^{\rm F}\geq\cos t$。由式 \eqref{eq:follower-contact}，当
+$\sin\theta\sin\psi>0$ 时，该事件等价于
+\begin{equation}
+ \cos\phi\geq
+ \frac{\cos t-\cos\theta\cos\psi}{\sin\theta\sin\psi}
+ =x(t;\theta,\psi).
+\end{equation}
+若 $x\leq-1$，所有 $\phi$ 均满足；若 $x\geq1$，除零测集外均不满足；若
+$-1<x<1$，满足条件的方位区间总长度为 $2\arccos x$，除以 $2\pi$ 得
+$\arccos x/\pi$。最后对 $\Psi$ 的密度积分，得到式
+\eqref{eq:follower-conditional-cdf}。
+\end{proof}
+
+\begin{lemma}[Follower 自身可见性与边界修正]
+\label{lem:follower-visibility}
+给定 parent 接触角 $\theta$，其 follower 可见概率为
+\begin{equation}
+ p_{\rm vis,F}(\theta)
+ =
+ \int_0^{\thetac}
+ v(\thetam;\theta,\psi)
+ \frac{\sin\psi}{1-\cos\thetac}\dd\psi.
+ \label{eq:follower-visible-parent}
+\end{equation}
+若 $\theta>\thetam+\thetac$，则 $p_{\rm vis,F}(\theta)=0$；若
+$\theta\leq\thetam-\thetac$，则 $p_{\rm vis,F}(\theta)=1$。特别地，当
+$\thetam<\theta\leq\thetam+\thetac$ 时，parent leader 不可见但 follower 仍有正概率
+可见。
+\end{lemma}
+
+\begin{proof}
+将引理中的阈值 $t$ 取为 $\thetam$ 即得式 \eqref{eq:follower-visible-parent}。
+球面三角不等式给出
+\begin{equation}
+ |\theta-\psi|\leq\Theta^{\rm F}\leq\theta+\psi.
+\end{equation}
+因为 $0\leq\psi\leq\thetac$，当 $\theta>\thetam+\thetac$ 时，
+$\Theta^{\rm F}\geq\theta-\thetac>\thetam$，故不可能可见。当
+$\theta\leq\thetam-\thetac$ 时，
+$\Theta^{\rm F}\leq\theta+\thetac\leq\thetam$，故必然可见。中间边界带中，某些朝向用户
+的 follower 满足 $\Theta^{\rm F}\leq\thetam$，故概率严格大于零。
+\end{proof}
+
+\begin{remark}
+外部 follower 干扰的 parent-angle 积分不能在 $\thetam$ 截断，而至少应延伸到
+$\thetam+\thetac$；最严谨的写法是在 $[\theta_0,\pi]$ 上积分并保留 follower 自身可见
+指示函数。
+\end{remark}
+
+\section{链路距离、衰落与归一化功率}
+
+\subsection{几何距离}
+
+卫星接触角为 $\theta$ 时，卫星到地面用户的欧氏距离由余弦定理得到
+\begin{equation}
+ r_{\rm SU}(\theta)
+ =
+ \sqrt{\Rsat^2+\Rearth^2-2\Rsat\Rearth\cos\theta}.
+ \label{eq:su-distance}
+\end{equation}
+两个同轨道半径卫星的地心夹角为 $\psi$ 时，弦长为
+\begin{equation}
+\begin{split}
+ r_{\rm LF}(\psi)^2
+ &=\Rsat^2+\Rsat^2-2\Rsat^2\cos\psi\\
+ &=2\Rsat^2(1-\cos\psi)
+ =4\Rsat^2\sin^2(\psi/2),
+\end{split}
+\end{equation}
+因此
+\begin{equation}
+ r_{\rm LF}(\psi)=2\Rsat\sin(\psi/2).
+ \label{eq:lf-distance}
+\end{equation}
+
+\subsection{归一化接收功率}
+
+对链路类型 $x\in\{\mathrm{LU},\mathrm{FU},\mathrm{LF}\}$，令发射功率、合并天线增益、
+附加确定性衰减、波长和参考带宽接收噪声分别为
+$P_x,G_x,\zeta_x,\lambda_x,\sigma_{x,\rm ref}^2$。自由空间路径损耗下，按参考噪声
+归一化的系数为
+\begin{equation}
+ \xi_x
+ =
+ \frac{P_xG_x\zeta_x}{\sigma_{x,\rm ref}^2}
+ \left(\frac{\lambda_x}{4\pi}\right)^2.
+ \label{eq:xi}
+\end{equation}
+若链路功率衰落为 $W_x$，则归一化瞬时接收功率为
+\begin{equation}
+ S_x(r)=\frac{\xi_xW_x}{r^2}.
+ \label{eq:normalized-power}
+\end{equation}
+式 \eqref{eq:xi} 使参考带宽噪声归一化为 $1$；实际分支噪声项为
+$\nu_r$。固定参考噪声口径对应 $\nu_r=1$，带宽缩放噪声口径对应式
+\eqref{eq:branch-noise-factor}。
+
+\subsection{Shadowed-Rician 分布及其 Gamma 矩匹配}
+
+令 Shadowed-Rician 参数为 $(\Omega,b_0,m)$，其中 $\Omega$ 为视距分量平均功率，
+$2b_0$ 为散射分量平均功率，$m$ 为阴影参数。其功率增益 CDF 可写为
+\begin{equation}
+\begin{split}
+ F_W(w)
+ =
+ \left(\frac{2b_0m}{2b_0m+\Omega}\right)^m
+ \sum_{z=0}^{\infty}
+ \frac{(m)_z}{z!\Gamma(z+1)}
+ \left(\frac{\Omega}{2b_0m+\Omega}\right)^z
+ \Gamma_l\left(z+1,\frac{w}{2b_0}\right),
+\end{split}
+\label{eq:sr-cdf}
+\end{equation}
+其中 $(m)_z=\Gamma(m+z)/\Gamma(m)$ 为 Pochhammer 符号，
+$\Gamma_l(a,x)=\int_0^x t^{a-1}e^{-t}\dd t$ 为下不完全 Gamma 函数。该分布的一阶矩和
+方差为
+\begin{align}
+ \mu_W
+ &=\E[W]=2b_0+\Omega,\label{eq:sr-mean}\\
+ \sigma_W^2
+ &=\Var(W)
+ =4b_0^2+4b_0\Omega+\frac{\Omega^2}{m}.
+ \label{eq:sr-var}
+\end{align}
+为获得稳定积分，用 Gamma 分布匹配上述均值和方差：
+\begin{equation}
+ W\sim\operatorname{Gamma}(\kappa,\beta),
+ \label{eq:gamma-fading}
+\end{equation}
+其中 $\kappa$ 为形状参数，$\beta$ 为尺度参数，PDF、CDF 补函数和 Laplace 变换分别为
+\begin{align}
+ f_W(w)
+ &=\frac{w^{\kappa-1}e^{-w/\beta}}
+ {\Gamma(\kappa)\beta^\kappa},\quad w\geq0,\label{eq:gamma-pdf}\\
+ \overline F_W(w)
+ &=\frac{\Gamma(\kappa,w/\beta)}{\Gamma(\kappa)}
+ =Q(\kappa,w/\beta),\label{eq:gamma-ccdf}\\
+ \Lcal_W(s)
+ &=\E[e^{-sW}]=(1+\beta s)^{-\kappa}.
+ \label{eq:gamma-lt}
+\end{align}
+
+Gamma 分布满足 $\E[W]=\kappa\beta$、$\Var(W)=\kappa\beta^2$。联立
+\begin{equation}
+ \kappa\beta=2b_0+\Omega,\qquad
+ \kappa\beta^2=
+ 4b_0^2+4b_0\Omega+\frac{\Omega^2}{m},
+\end{equation}
+先以第二式除以第一式，再将所得 $\beta$ 代回第一式，得到
+\begin{align}
+ \beta
+ &=
+ \frac{4mb_0^2+4mb_0\Omega+\Omega^2}
+ {m(2b_0+\Omega)},\label{eq:sr-gamma-scale}\\
+ \kappa
+ &=
+ \frac{m(2b_0+\Omega)^2}
+ {4mb_0^2+4mb_0\Omega+\Omega^2}.
+ \label{eq:sr-gamma-shape}
+\end{align}
+因此该 Gamma 近似严格匹配 Shadowed-Rician 功率增益的前两矩；使用它是数值近似，
+并不意味着原衰落分布被重新定义。
+
+\begin{proof}[式 \eqref{eq:gamma-lt} 的推导]
+\begin{equation}
+\begin{split}
+ \Lcal_W(s)
+ &=\int_0^\infty e^{-sw}
+ \frac{w^{\kappa-1}e^{-w/\beta}}
+ {\Gamma(\kappa)\beta^\kappa}\dd w\\
+ &=\frac{1}{\Gamma(\kappa)\beta^\kappa}
+ \int_0^\infty
+ w^{\kappa-1}e^{-(s+1/\beta)w}\dd w\\
+ &=\frac{1}{\Gamma(\kappa)\beta^\kappa}
+ \frac{\Gamma(\kappa)}{(s+1/\beta)^\kappa}\\
+ &=(1+\beta s)^{-\kappa}.
+\end{split}
+\end{equation}
+\end{proof}
+
+Gamma 衰落的任意 $n$ 阶原点矩为
+\begin{equation}
+ \E[W^n]
+ =\beta^n\frac{\Gamma(\kappa+n)}{\Gamma(\kappa)}.
+ \label{eq:gamma-moment}
+\end{equation}
+特别地，
+\begin{equation}
+ \E[W]=\kappa\beta,\qquad
+ \E[W^2]=\kappa(\kappa+1)\beta^2.
+ \label{eq:gamma-first-two}
+\end{equation}
+
+\section{复用、活动概率与有效干扰耦合}
+
+\subsection{有效干扰耦合的物理分解}
+
+\begin{definition}[有效干扰耦合]
+外部干扰链路相对目标服务链路的有效功率耦合写为
+\begin{equation}
+ g_{\mathrm I}
+ =
+ g_{\rm side}\,g_{\rm beam}\,g_{\rm pol}\,g_{\rm point}\,g_{\rm sched},
+ \label{eq:gi-decomposition}
+\end{equation}
+其中各因子依次表示天线旁瓣、空间波束隔离、极化失配、指向误差和调度隔离。若只使用
+标量扫描，则
+\begin{equation}
+ g_{\mathrm I}=10^{G_{\mathrm I,dB}/10}.
+ \label{eq:gi-db}
+\end{equation}
+\end{definition}
+
+式 \eqref{eq:gi-decomposition} 说明 $g_{\mathrm I}$ 不是新的传播常数，而是对未显式建模
+隔离机制的有效汇总。$G_{\mathrm I,dB}=0$ dB 是极端无隔离基准，$-10$ dB 或 $-20$ dB
+表示逐步增强的波束与调度隔离。
+
+\subsection{条件同频活动概率与公共复用颜色}
+
+\begin{definition}[条件同频活动概率]
+$p_{\rm act}$ 定义为：条件于典型用户所在服务资源块正在传输，一个复用颜色相同的外部
+cluster 在对应资源块上同时活动的概率。它不是整个 cluster 的全局 duty cycle，也不能
+在网络吞吐代理外再无条件乘一次。
+\end{definition}
+
+为保留跨资源块相关性，对外部 cluster $j$ 定义公共复用颜色标记
+\begin{equation}
+ C_j\sim\operatorname{Bernoulli}(1/K)
+ \label{eq:reuse-mark}
+\end{equation}
+和分支活动标记
+\begin{equation}
+ U_{j,r}\sim\operatorname{Bernoulli}(p_{\rm act}),
+ \qquad r\in\{\mathrm L,\mathrm F_1,\ldots,\mathrm F_{\NF}\}.
+ \label{eq:activity-mark}
+\end{equation}
+此外，用
+\begin{equation}
+ D_{j,i}\sim\operatorname{Bernoulli}(p_{\rm dep})
+ \label{eq:deployment-mark}
+\end{equation}
+表示第 $i$ 个 follower 已装配且当前可用；服务 cluster 也使用同分布的
+$D_{0,i}$。固定完整编队对应 $p_{\rm dep}=1$。于是 leader 与 follower 的边缘同频概率
+分别为
+\begin{equation}
+ q_{\rm L}=\frac{p_{\rm act}}{K},
+ \qquad
+ q_{\rm F}=\frac{p_{\rm dep}p_{\rm act}}{K}.
+ \label{eq:q}
+\end{equation}
+同一 cluster 的所有分支共享 $C_j$ 和 parent 几何 $\Theta_j$，故它们并非无条件独立。
+
+\begin{remark}
+若工程系统为每个资源块独立随机选色，可以直接使用独立
+$A_{j,r}\sim\operatorname{Bernoulli}(q)$；此时后文联合核退化为各边缘核之积。公共复用
+颜色模型更保守地保留 cluster 级相关性。
+\end{remark}
+
+\section{正交资源下的相关干扰向量}
+
+\subsection{目标信号和各资源块干扰}
+
+服务 leader 的目标信号为
+\begin{equation}
+ S_{\rm L}
+ =\frac{\xi_{\rm LU}W_0^{\rm L}}
+ {r_{\rm SU}(\Theta_0)^2}.
+ \label{eq:desired-leader}
+\end{equation}
+服务 follower $i$ 的目标信号为
+\begin{equation}
+ S_{{\rm F},i}
+ =
+ D_{0,i}V_{0,i}^{\rm F}
+ \frac{\xi_{{\rm FU},i}W_{0,i}^{\rm F}}
+ {r_{\rm SU}(\Theta_{0,i}^{\rm F})^2},
+ \quad
+ V_{0,i}^{\rm F}=\ind\{\Theta_{0,i}^{\rm F}\leq\thetam\}.
+ \label{eq:desired-follower}
+\end{equation}
+
+主模型中 leader RB 只受到外部 clusters 的 leader 同块干扰：
+\begin{equation}
+ I_{\rm L}
+ =
+ \sum_{j=1}^{\NL-1}
+ C_jU_{j,\rm L}
+ \ind\{\Theta_j\leq\thetam\}
+ \frac{g_{\rm I}\xi_{\rm LU}W_{j}^{\rm L}}
+ {r_{\rm SU}(\Theta_j)^2}.
+ \label{eq:i-leader}
+\end{equation}
+服务 follower $i$ 的 RB 只受到每个外部 cluster 中对应同块 follower 的干扰：
+\begin{equation}
+ I_{{\rm F},i}
+ =
+ \sum_{j=1}^{\NL-1}
+ C_jD_{j,i}U_{j,{\rm F}_i}
+ \ind\{\Theta_{j,i}^{\rm F}\leq\thetam\}
+ \frac{g_{\rm I}\xi_{{\rm FU},i}W_{j,i}^{\rm F}}
+ {r_{\rm SU}(\Theta_{j,i}^{\rm F})^2}.
+ \label{eq:i-follower}
+\end{equation}
+定义干扰向量
+\begin{equation}
+ \Ivec=(I_{\rm L},I_{{\rm F},1},\ldots,I_{{\rm F},\NF}).
+ \label{eq:interference-vector}
+\end{equation}
+
+\begin{remark}[不能把主模型写成同一个干扰标量]
+式 \eqref{eq:i-leader} 和 \eqref{eq:i-follower} 位于不同正交 RB 上，因此
+$I_{\rm L}$ 与 $I_{{\rm F},i}$ 一般不相等。它们共享外部 parent angles、复用颜色和宏观
+网络状态，因此构成相关随机向量。只有在极端全频复用且所有服务分支同时占用同一频带时，
+才应使用共同标量干扰。
+\end{remark}
+
+\subsection{SINR 与极端全同频基准}
+
+正交资源主模型中的 SINR 为
+\begin{align}
+ \SINR_{\rm LU}
+ &=\frac{S_{\rm L}}{\nu_{\rm L}+I_{\rm L}},\label{eq:sinr-l}\\
+ \SINR_{{\rm FU},i}
+ &=\frac{S_{{\rm F},i}}{\nu_{{\rm F},i}+I_{{\rm F},i}}.
+ \label{eq:sinr-fi}
+\end{align}
+极端全同频且服务 cluster 内理想 SIC 的基准干扰为
+\begin{equation}
+\begin{split}
+ I_{\rm all}
+ =\sum_{j=1}^{\NL-1}C_j\bigg[
+ &U_{j,\rm L}\ind\{\Theta_j\leq\thetam\}
+ \frac{g_{\rm I}\xi_{\rm LU}W_j^{\rm L}}{r_{\rm SU}(\Theta_j)^2}\\
+ &+\sum_{i=1}^{\NF}
+ D_{j,i}U_{j,{\rm F}_i}\ind\{\Theta_{j,i}^{\rm F}\leq\thetam\}
+ \frac{g_{\rm I}\xi_{{\rm FU},i}W_{j,i}^{\rm F}}
+ {r_{\rm SU}(\Theta_{j,i}^{\rm F})^2}
+ \bigg].
+\end{split}
+\label{eq:i-all}
+\end{equation}
+该基准的所有地面分支分母均为 $\nu_r+I_{\rm all}$；固定参考噪声口径下退化为
+$1+I_{\rm all}$。该极端基准不用于固定总带宽主模型的公平速率比较。
+
+\section{联合干扰 Laplace 变换}
+
+\subsection{单分支衰落平均核}
+
+对任意 $s\geq0$，定义可见 leader 的活动衰落核
+\begin{equation}
+ M_{\rm L}(s,\theta)
+ =
+ 1-p_{\rm act}
+ +p_{\rm act}
+ \left(
+ 1+\frac{\beta s g_{\rm I}\xi_{\rm LU}}
+ {r_{\rm SU}(\theta)^2}
+ \right)^{-\kappa}
+ \label{eq:leader-active-kernel}
+\end{equation}
+以及带可见指示的核
+\begin{equation}
+ \widetilde M_{\rm L}(s,\theta)
+ =
+ \begin{cases}
+ M_{\rm L}(s,\theta),&\theta\leq\thetam,\\
+ 1,&\theta>\thetam.
+ \end{cases}
+ \label{eq:leader-kernel}
+\end{equation}
+对 follower RB $i$，给定 parent angle $\theta$，先记
+\begin{equation}
+ d_{\rm F}(\theta,\psi,\phi)
+ =r_{\rm SU}(\Theta^{\rm F}(\theta,\psi,\phi)),
+ \qquad
+ V_{\rm F}(\theta,\psi,\phi)
+ =\ind\{\Theta^{\rm F}(\theta,\psi,\phi)\leq\thetam\}.
+ \label{eq:follower-shortcuts}
+\end{equation}
+再定义已装配 follower 在给定偏移下的活动衰落核
+\begin{equation}
+ A_{{\rm F},i}(s,\theta,\psi,\phi)
+ =
+ 1-p_{\rm act}
+ +p_{\rm act}
+ \left(
+ 1+
+ \frac{\beta s g_{\rm I}\xi_{{\rm FU},i}
+ V_{\rm F}(\theta,\psi,\phi)}
+ {d_{\rm F}(\theta,\psi,\phi)^2}
+ \right)^{-\kappa}.
+ \label{eq:follower-active-kernel}
+\end{equation}
+对装配状态和球冠偏移继续平均，得到
+\begin{equation}
+\begin{split}
+ \widetilde M_{{\rm F},i}(s,\theta)
+ =
+ \int_0^{\thetac}\int_0^{2\pi}
+ \left[
+ 1-p_{\rm dep}
+ +p_{\rm dep}A_{{\rm F},i}(s,\theta,\psi,\phi)
+ \right]
+ \frac{\sin\psi}
+ {2\pi(1-\cos\thetac)}
+ \dd\phi\dd\psi.
+\end{split}
+\label{eq:follower-kernel}
+\end{equation}
+当 follower 不可见时，指示函数为零，括号中的 Laplace 因子自动等于 $1$。
+
+\begin{theorem}[相关干扰向量的条件联合 Laplace 变换]
+\label{thm:joint-lt}
+给定 $\Theta_0=\theta_0$，对
+$\svec=(s_{\rm L},s_{{\rm F},1},\ldots,s_{{\rm F},\NF})\succeq\bm0$，正交资源干扰向量
+\eqref{eq:interference-vector} 的联合 Laplace 变换为
+\begin{equation}
+ \Lcal_{\Ivec}(\svec\mid\theta_0)
+ =
+ \left[
+ \int_{\theta_0}^{\pi}
+ \Gcal(\svec,\theta)
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta
+ \right]^{\NL-1},
+ \label{eq:joint-lt}
+\end{equation}
+其中公共复用颜色下的单外部 cluster 核为
+\begin{equation}
+ \Gcal(\svec,\theta)
+ =
+ 1-\frac1K
+ +\frac1K
+ \widetilde M_{\rm L}(s_{\rm L},\theta)
+ \prod_{i=1}^{\NF}
+ \widetilde M_{{\rm F},i}(s_{{\rm F},i},\theta).
+ \label{eq:joint-cluster-kernel}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+把外部 cluster $j$ 对各 RB 的干扰组成向量
+\begin{equation}
+ \Zvec_j=(Z_{j,\rm L},Z_{j,{\rm F}_1},\ldots,Z_{j,{\rm F}_{\NF}}),
+ \qquad
+ \Ivec=\sum_{j=1}^{\NL-1}\Zvec_j.
+\end{equation}
+条件于 $\Theta_0=\theta_0$ 后，由引理 \ref{lem:nonserving}，不同外部 clusters 的
+parent angles 独立同分布；其活动、偏移和衰落也跨 cluster 独立。因此
+\begin{equation}
+\begin{split}
+ \Lcal_{\Ivec}(\svec\mid\theta_0)
+ &=\E\left[
+ \exp\left(-\svec^{\mathsf T}\sum_{j=1}^{\NL-1}\Zvec_j\right)
+ \middle|\theta_0
+ \right]\\
+ &=\E\left[
+ \prod_{j=1}^{\NL-1}
+ e^{-\svec^{\mathsf T}\Zvec_j}
+ \middle|\theta_0
+ \right]\\
+ &=\prod_{j=1}^{\NL-1}
+ \E\left[e^{-\svec^{\mathsf T}\Zvec_j}\middle|\theta_0\right]\\
+ &=\left(
+ \E\left[e^{-\svec^{\mathsf T}\Zvec_1}\middle|\theta_0\right]
+ \right)^{\NL-1}.
+ \label{eq:lt-cluster-product-proof}
+\end{split}
+\end{equation}
+再条件于单个外部 parent angle $\Theta=\theta$ 和公共复用标记 $C$。若 $C=0$，该 cluster
+在所有目标 RB 上均不产生同频干扰，指数项为 $1$；其概率为 $1-1/K$。若 $C=1$，条件于
+$\theta$ 后，各分支活动、偏移和衰落独立，因此指数平均分解为
+\begin{equation}
+ \widetilde M_{\rm L}(s_{\rm L},\theta)
+ \prod_{i=1}^{\NF}
+ \widetilde M_{{\rm F},i}(s_{{\rm F},i},\theta).
+\end{equation}
+对 $C$ 平均得到式 \eqref{eq:joint-cluster-kernel}。最后按式
+\eqref{eq:nonserving-pdf} 对 $\theta$ 积分，并代回式
+\eqref{eq:lt-cluster-product-proof}，即得式 \eqref{eq:joint-lt}。
+\end{proof}
+
+\begin{corollary}[边缘 Laplace 变换]
+令 $\svec$ 中除目标分支 $r$ 外的元素均为零，则
+\begin{equation}
+ \Lcal_{I_r}(s\mid\theta_0)
+ =
+ \Lcal_{\Ivec}(0,\ldots,s,\ldots,0\mid\theta_0).
+ \label{eq:marginal-lt}
+\end{equation}
+\end{corollary}
+
+\begin{proof}
+联合 Laplace 变换定义为 $\E[\exp(-\sum_r s_rI_r)]$。令非目标分支参数为零后，对应因子
+均为 $e^0=1$，故只剩目标边缘变量。
+\end{proof}
+
+\begin{corollary}[独立 RB 选色特例]
+若每个 RB 独立使用 $A_{j,r}\sim\operatorname{Bernoulli}(q)$，则单 cluster 核退化为
+\begin{equation}
+ \Gcal_{\rm ind}(\svec,\theta)
+ =
+ \widetilde M_{\rm L}^{(q)}(s_{\rm L},\theta)
+ \prod_{i=1}^{\NF}
+ \widetilde M_{{\rm F},i}^{(q)}(s_{{\rm F},i},\theta),
+\end{equation}
+其中 leader 核中把 $p_{\rm act}$ 替换为 $q_{\rm L}$，follower 核中把
+$p_{\rm dep}p_{\rm act}$ 替换为 $q_{\rm F}$。
+\end{corollary}
+
+\begin{corollary}[极端全同频共同干扰的 Laplace 变换]
+式 \eqref{eq:i-all} 的条件 Laplace 变换为
+\begin{equation}
+ \Lcal_{I_{\rm all}}(s\mid\theta_0)
+ =
+ \left[
+ \int_{\theta_0}^{\pi}
+ \left(
+ 1-\frac1K+\frac1K
+ \widetilde M_{\rm L}(s,\theta)
+ \prod_{i=1}^{\NF}\widetilde M_{{\rm F},i}(s,\theta)
+ \right)
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta
+ \right]^{\NL-1}.
+ \label{eq:common-lt}
+\end{equation}
+\end{corollary}
+
+\section{条件矩、跨分支协方差与 Gamma 矩匹配}
+
+\subsection{单分支一、二阶矩}
+
+对分支 $r$，令单个外部 cluster 的归一化干扰写成
+\begin{equation}
+ Z_r=A_rH_r,
+ \qquad A_r\sim\operatorname{Bernoulli}(q_r),
+ \label{eq:z-ah}
+\end{equation}
+其中 $H_r$ 包含可见性、距离、耦合系数和衰落。由于 $A_r^n=A_r$，
+\begin{align}
+ m_{1,r}(\theta_0)
+ &=\E[Z_r\mid\theta_0]
+ =q_r\E[H_r\mid\theta_0],\label{eq:m1-general}\\
+ m_{2,r}(\theta_0)
+ &=\E[Z_r^2\mid\theta_0]
+ =q_r\E[H_r^2\mid\theta_0].
+ \label{eq:m2-general}
+\end{align}
+
+对 leader RB，利用式 \eqref{eq:nonserving-pdf}，
+\begin{align}
+ m_{1,\rm L}(\theta_0)
+ &=
+ q_{\rm L}g_{\rm I}\xi_{\rm LU}\E[W]
+ \int_{\theta_0}^{\thetam}
+ \frac{\sin\theta}{1+\cos\theta_0}
+ \frac{\dd\theta}{r_{\rm SU}(\theta)^2},
+ \label{eq:m1-leader}\\
+ m_{2,\rm L}(\theta_0)
+ &=
+ q_{\rm L}(g_{\rm I}\xi_{\rm LU})^2\E[W^2]
+ \int_{\theta_0}^{\thetam}
+ \frac{\sin\theta}{1+\cos\theta_0}
+ \frac{\dd\theta}{r_{\rm SU}(\theta)^4}.
+ \label{eq:m2-leader}
+\end{align}
+对 follower RB $i$，定义
+\begin{equation}
+ h_{{\rm F},i}^{(n)}(\theta)
+ =
+ \int_0^{\thetac}\int_0^{2\pi}
+ \frac{
+ \ind\{\Theta^{\rm F}(\theta,\psi,\phi)\leq\thetam\}
+ }{
+ r_{\rm SU}(\Theta^{\rm F}(\theta,\psi,\phi))^{2n}
+ }
+ \frac{\sin\psi}{2\pi(1-\cos\thetac)}
+ \dd\phi\dd\psi.
+ \label{eq:follower-distance-moment-kernel}
+\end{equation}
+则
+\begin{align}
+ m_{1,{\rm F}_i}(\theta_0)
+ &=
+ q_{\rm F}g_{\rm I}\xi_{{\rm FU},i}\E[W]
+ \int_{\theta_0}^{\pi}
+ h_{{\rm F},i}^{(1)}(\theta)
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta,
+ \label{eq:m1-follower}\\
+ m_{2,{\rm F}_i}(\theta_0)
+ &=
+ q_{\rm F}(g_{\rm I}\xi_{{\rm FU},i})^2\E[W^2]
+ \int_{\theta_0}^{\pi}
+ h_{{\rm F},i}^{(2)}(\theta)
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta.
+ \label{eq:m2-follower}
+\end{align}
+
+\begin{theorem}[聚合干扰条件均值与方差]
+给定 $\Theta_0=\theta_0$，分支 $r$ 上有 $\NL-1$ 个条件独立外部 cluster 贡献，则
+\begin{align}
+ \mu_r(\theta_0)
+ &=\E[I_r\mid\theta_0]
+ =(\NL-1)m_{1,r}(\theta_0),\label{eq:aggregate-mean}\\
+ v_r(\theta_0)
+ &=\Var(I_r\mid\theta_0)
+ =(\NL-1)\left[m_{2,r}(\theta_0)-m_{1,r}(\theta_0)^2\right].
+ \label{eq:aggregate-var}
+\end{align}
+\end{theorem}
+
+\begin{proof}
+写 $I_r=\sum_{j=1}^{\NL-1}Z_{j,r}$。由条件同分布，
+\begin{equation}
+ \E[I_r\mid\theta_0]
+ =\sum_j\E[Z_{j,r}\mid\theta_0]
+ =(\NL-1)m_{1,r}.
+\end{equation}
+由跨 cluster 条件独立性，
+\begin{equation}
+\begin{split}
+ \Var(I_r\mid\theta_0)
+ &=\sum_j\Var(Z_{j,r}\mid\theta_0)\\
+ &=(\NL-1)
+ \left(\E[Z_r^2\mid\theta_0]-\E[Z_r\mid\theta_0]^2\right),
+\end{split}
+\end{equation}
+即得式 \eqref{eq:aggregate-var}。
+\end{proof}
+
+\subsection{跨资源块相关性}
+
+令 $\bar h_r(\theta)=\E[H_r\mid\Theta=\theta]$，并定义可用概率因子
+$d_{\rm L}=1$、$d_{{\rm F}_i}=p_{\rm dep}$。对两个不同 RB $r\neq t$，公共复用颜色
+模型给出
+\begin{equation}
+ \E[Z_rZ_t\mid\theta_0]
+ =
+ \frac{d_rd_t p_{\rm act}^2}{K}
+ \int_{\theta_0}^{\pi}
+ \bar h_r(\theta)\bar h_t(\theta)
+ \frac{\sin\theta}{1+\cos\theta_0}\dd\theta.
+ \label{eq:cross-raw-moment}
+\end{equation}
+注意公共颜色部分的系数是 $p_{\rm act}^2/K$ 而非
+$(p_{\rm act}/K)^2$，因为两个分支共享同一个颜色标记 $C$；$d_rd_t$ 则保留 follower
+是否装配并可用的影响。
+
+\begin{theorem}[聚合干扰的条件协方差]
+对 $r\neq t$，
+\begin{equation}
+ \Cov(I_r,I_t\mid\theta_0)
+ =
+ (\NL-1)
+ \left[
+ \E[Z_rZ_t\mid\theta_0]
+ -m_{1,r}(\theta_0)m_{1,t}(\theta_0)
+ \right].
+ \label{eq:aggregate-covariance}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+\begin{equation}
+\begin{split}
+ \Cov(I_r,I_t\mid\theta_0)
+ &=
+ \Cov\left(\sum_jZ_{j,r},\sum_\ell Z_{\ell,t}\middle|\theta_0\right)\\
+ &=
+ \sum_j\sum_\ell
+ \Cov(Z_{j,r},Z_{\ell,t}\mid\theta_0).
+\end{split}
+\end{equation}
+当 $j\neq\ell$ 时，不同 clusters 条件独立，协方差为零；只剩 $j=\ell$ 的 $\NL-1$
+项。每项等于 $\E[Z_rZ_t]-\E[Z_r]\E[Z_t]$，故得结论。
+\end{proof}
+
+\subsection{边缘 Gamma 矩匹配与联合近似}
+
+若 $\mu_r>0,v_r>0$，用 Gamma 分布匹配前两矩：
+\begin{equation}
+ I_r\mid\theta_0
+ \approx\operatorname{Gamma}
+ \left(
+ k_{I,r}(\theta_0),\beta_{I,r}(\theta_0)
+ \right),
+ \label{eq:interference-gamma}
+\end{equation}
+由 Gamma 均值 $k\beta$ 和方差 $k\beta^2$ 解得
+\begin{equation}
+ k_{I,r}=\frac{\mu_r^2}{v_r},
+ \qquad
+ \beta_{I,r}=\frac{v_r}{\mu_r}.
+ \label{eq:moment-match}
+\end{equation}
+
+\begin{proof}
+联立 $k\beta=\mu$ 与 $k\beta^2=v$。第二式除以第一式得 $\beta=v/\mu$，再代入第一式
+得 $k=\mu^2/v$。
+\end{proof}
+
+边缘 Gamma 近似不能自动保留跨 RB 相关性。完整半解析计算应使用定理
+\ref{thm:joint-lt}；若需要快速联合采样，可先由式 \eqref{eq:aggregate-covariance} 构造
+相关矩阵，再使用 Gaussian copula 将相关高斯样本映射为各 Gamma 边缘。该 copula 是
+数值近似，必须独立对照完整几何 Monte Carlo。
+
+\section{星间链路与译码转发瓶颈}
+
+设 leader--follower 链路采用独立频段或高度方向性资源。若忽略 ISL 同频干扰，其 SNR
+为
+\begin{equation}
+ \SNR_{{\rm LF},i}
+ =
+ \frac{\xi_{{\rm LF},i}W_{{\rm LF},i}}
+ {r_{\rm LF}(\Psi_{0,i})^2}.
+ \label{eq:lf-snr}
+\end{equation}
+若当前基线将 ISL 视为确定性，则令 $W_{{\rm LF},i}=1$。
+
+\begin{definition}[译码转发端到端分支速率]
+独立频段或全双工理想化下，第 $i$ 个 follower 路径速率为
+\begin{equation}
+ R_i^{\rm DF}
+ =
+ \min\left\{
+ B_{{\rm LF},i}\log_2(1+\SNR_{{\rm LF},i}),
+ B_{{\rm FU},i}\log_2(1+\SINR_{{\rm FU},i})
+ \right\}.
+ \label{eq:df-rate}
+\end{equation}
+若等时隙半双工，则
+\begin{equation}
+ R_i^{\rm HD}
+ =
+ \frac12\min\left\{
+ B_{{\rm LF},i}\log_2(1+\SNR_{{\rm LF},i}),
+ B_{{\rm FU},i}\log_2(1+\SINR_{{\rm FU},i})
+ \right\}.
+ \label{eq:half-duplex-rate}
+\end{equation}
+\end{definition}
+
+更一般地，若 LF 阶段占比为 $\tau_i$，FU 阶段占比为 $1-\tau_i$，令
+$C_{{\rm LF},i}$ 和 $C_{{\rm FU},i}$ 为两跳单独容量，则
+\begin{equation}
+ R_i(\tau_i)=\min\{\tau_iC_{{\rm LF},i},(1-\tau_i)C_{{\rm FU},i}\}.
+ \label{eq:time-split-rate}
+\end{equation}
+两项相等时最优，因此
+\begin{align}
+ \tau_i^\star
+ &=\frac{C_{{\rm FU},i}}{C_{{\rm LF},i}+C_{{\rm FU},i}},
+ \label{eq:time-split-opt}\\
+ R_i^\star
+ &=\frac{C_{{\rm LF},i}C_{{\rm FU},i}}
+ {C_{{\rm LF},i}+C_{{\rm FU},i}}.
+ \label{eq:harmonic-rate}
+\end{align}
+
+\section{接入覆盖与端到端 Relay Coverage}
+
+\subsection{条件分支成功概率}
+
+给定服务几何 $\Gvec_0$ 和干扰向量 $\Ivec$，leader 分支成功概率为
+\begin{equation}
+ p_{\rm L}(\gamma\mid\Gvec_0,\Ivec)
+ =
+ \overline F_W\left(
+ \frac{\gamma(\nu_{\rm L}+I_{\rm L})r_{\rm SU}(\Theta_0)^2}
+ {\xi_{\rm LU}}
+ \right).
+ \label{eq:conditional-leader-success}
+\end{equation}
+第 $i$ 个 follower 地面分支成功概率为
+\begin{equation}
+ p_{{\rm F},i}(\gamma\mid\Gvec_0,\Ivec)
+ =
+ D_{0,i}V_{0,i}^{\rm F}
+ \overline F_W\left(
+ \frac{\gamma(\nu_{{\rm F},i}+I_{{\rm F},i})
+ r_{\rm SU}(\Theta_{0,i}^{\rm F})^2}
+ {\xi_{{\rm FU},i}}
+ \right).
+ \label{eq:conditional-follower-success}
+\end{equation}
+若 ISL 衰落随机，则定义
+\begin{equation}
+ p_{{\rm LF},i}(\gamma_{\rm LF}\mid\Gvec_0)
+ =
+ \overline F_{W_{\rm LF}}\left(
+ \frac{\gamma_{\rm LF}r_{\rm LF}(\Psi_{0,i})^2}
+ {\xi_{{\rm LF},i}}
+ \right);
+ \label{eq:conditional-lf-success}
+\end{equation}
+若 ISL 确定，则该式退化为相应 SNR 门限的指示函数。
+
+\begin{theorem}[接入覆盖概率]
+\label{thm:access-coverage}
+若服务分支目标衰落在给定 $\Gvec_0,\Ivec$ 后相互独立，则 cluster 接入覆盖概率为
+\begin{equation}
+ \Pa(\gamma)
+ =
+ \E_{\Gvec_0,\Ivec}
+ \left[
+ 1-
+ \left(1-p_{\rm L}\right)
+ \prod_{i=1}^{\NF}
+ \left(1-p_{{\rm F},i}\right)
+ \right].
+ \label{eq:access-coverage-exact}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+接入失败事件是所有地面分支均未超过门限：
+\begin{equation}
+ \mathcal O_{\rm access}
+ =
+ \{\SINR_{\rm LU}<\gamma\}
+ \cap
+ \bigcap_{i=1}^{\NF}
+ \{\SINR_{{\rm FU},i}<\gamma\}.
+\end{equation}
+条件于 $\Gvec_0,\Ivec$ 后，目标衰落独立，因此
+\begin{equation}
+ \Prob(\mathcal O_{\rm access}\mid\Gvec_0,\Ivec)
+ =
+ (1-p_{\rm L})\prod_i(1-p_{{\rm F},i}).
+\end{equation}
+成功概率为其补事件概率。最后对服务几何和\emph{联合相关}干扰向量取期望，得到
+\eqref{eq:access-coverage-exact}。
+\end{proof}
+
+\begin{remark}[独立性错误的避免]
+不能直接把无条件边缘 outage 相乘：
+\begin{equation}
+ \Prob(\mathcal O_{\rm access})
+ \neq
+ \Prob(\SINR_{\rm LU}<\gamma)
+ \prod_i\Prob(\SINR_{{\rm FU},i}<\gamma),
+\end{equation}
+因为各分支共享服务 parent 几何和外部 cluster 几何。正确做法是先条件化全部共享状态，
+再相乘，最后做外层期望。
+\end{remark}
+
+\begin{theorem}[译码转发端到端覆盖概率]
+\label{thm:e2e-coverage}
+第 $i$ 个 follower 路径只有在 LF 与 FU 两跳均成功时可用。于是
+\begin{equation}
+ \Pe(\gamma,\gamma_{\rm LF})
+ =
+ \E_{\Gvec_0,\Ivec}
+ \left[
+ 1-
+ (1-p_{\rm L})
+ \prod_{i=1}^{\NF}
+ \left(
+ 1-p_{{\rm F},i}p_{{\rm LF},i}
+ \right)
+ \right].
+ \label{eq:e2e-coverage-exact}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+给定共享状态后，第 $i$ 条 DF 路径成功事件为
+\begin{equation}
+ \mathcal S_i^{\rm DF}
+ =
+ \{\SINR_{{\rm FU},i}\geq\gamma\}
+ \cap
+ \{\SNR_{{\rm LF},i}\geq\gamma_{\rm LF}\}.
+\end{equation}
+若两跳衰落条件独立，其条件成功概率为
+$p_{{\rm F},i}p_{{\rm LF},i}$。端到端失败要求 leader 失败且所有 DF 路径失败，故条件
+失败概率为
+\begin{equation}
+ (1-p_{\rm L})\prod_i(1-p_{{\rm F},i}p_{{\rm LF},i}).
+\end{equation}
+取补事件并对共享状态取联合期望，得到结论。
+\end{proof}
+
+\begin{corollary}[端到端覆盖不高于接入覆盖]
+\begin{equation}
+ \Pe(\gamma,\gamma_{\rm LF})\leq\Pa(\gamma).
+ \label{eq:e2e-less-access}
+\end{equation}
+\end{corollary}
+
+\begin{proof}
+因为 $0\leq p_{{\rm LF},i}\leq1$，
+$p_{{\rm F},i}p_{{\rm LF},i}\leq p_{{\rm F},i}$，从而
+$1-p_{{\rm F},i}p_{{\rm LF},i}\geq1-p_{{\rm F},i}$。两边连乘并代入定理
+\ref{thm:access-coverage} 和 \ref{thm:e2e-coverage} 即得。
+\end{proof}
+
+\subsection{边缘 leader coverage 的半解析表达式}
+
+\begin{theorem}[Leader branch SINR coverage]
+\label{thm:leader-coverage}
+条件于存在可见服务 leader，leader 分支覆盖概率为
+\begin{equation}
+\begin{split}
+ P_{\rm cov}^{\rm LU}(\gamma)
+ =
+ \int_0^{\thetam}\int_0^\infty
+ \overline F_W\left(
+ \frac{\gamma(\nu_{\rm L}+i)r_{\rm SU}(\theta_0)^2}{\xi_{\rm LU}}
+ \right)
+ f_{I_{\rm L}\mid\Theta_0}(i\mid\theta_0)
+ f_{\Theta_0\mid{\rm vis}}(\theta_0)
+ \dd i\dd\theta_0.
+\end{split}
+\label{eq:leader-coverage-integral}
+\end{equation}
+其中 $f_{I_{\rm L}\mid\Theta_0}$ 可由边缘 Laplace 变换数值反演，或由式
+\eqref{eq:interference-gamma} 近似。
+\end{theorem}
+
+\begin{proof}
+由全概率公式，先对服务角条件化：
+\begin{equation}
+ P_{\rm cov}^{\rm LU}(\gamma)
+ =
+ \int_0^{\thetam}
+ \Prob(\SINR_{\rm LU}\geq\gamma\mid\Theta_0=\theta_0)
+ f_{\Theta_0\mid{\rm vis}}(\theta_0)\dd\theta_0.
+\end{equation}
+给定 $\Theta_0=\theta_0$ 和 $I_{\rm L}=i$，覆盖事件等价于
+\begin{equation}
+ W_0^{\rm L}
+ \geq
+ \frac{\gamma(\nu_{\rm L}+i)r_{\rm SU}(\theta_0)^2}{\xi_{\rm LU}},
+\end{equation}
+其概率为相应衰落 CCDF。再对条件干扰密度积分，即
+\begin{equation}
+\begin{split}
+ \Prob(\SINR_{\rm LU}\geq\gamma\mid\Theta_0=\theta_0)
+ =
+ \int_0^\infty
+ \overline F_W\left(
+ \frac{\gamma(\nu_{\rm L}+i)r_{\rm SU}(\theta_0)^2}{\xi_{\rm LU}}
+ \right)
+ f_{I_{\rm L}\mid\Theta_0}(i\mid\theta_0)\dd i.
+\end{split}
+\end{equation}
+代回外层积分即得式 \eqref{eq:leader-coverage-integral}。
+\end{proof}
+
+若目标衰落形状参数为正整数 $m$，其 CCDF 为
+\begin{equation}
+ \overline F_W(x)
+ =e^{-x/\beta}\sum_{n=0}^{m-1}\frac{(x/\beta)^n}{n!}.
+ \label{eq:integer-gamma-ccdf}
+\end{equation}
+令 $s=\gamma r_{\rm SU}(\theta_0)^2/(\beta\xi_{\rm LU})$，则
+\begin{equation}
+\begin{split}
+ \E_I[\overline F_W(\gamma(\nu_{\rm L}+I)r^2/\xi)]
+ &=
+ e^{-s\nu_{\rm L}}
+ \sum_{n=0}^{m-1}\frac{s^n}{n!}
+ \E[e^{-sI}(\nu_{\rm L}+I)^n]\\
+ &=
+ e^{-s\nu_{\rm L}}
+ \sum_{n=0}^{m-1}\frac{s^n}{n!}
+ \sum_{\ell=0}^{n}\binom n\ell
+ \nu_{\rm L}^{n-\ell}\E[I^\ell e^{-sI}]\\
+ &=
+ e^{-s\nu_{\rm L}}
+ \sum_{n=0}^{m-1}\frac{s^n}{n!}
+ \sum_{\ell=0}^{n}\binom n\ell
+ \nu_{\rm L}^{n-\ell}
+ (-1)^\ell
+ \frac{\dd^\ell}{\dd s^\ell}\Lcal_I(s).
+\end{split}
+\label{eq:coverage-lt-derivative}
+\end{equation}
+最后一步使用
+$\frac{\dd^\ell}{\dd s^\ell}\Lcal_I(s)
+=\E[(-I)^\ell e^{-sI}]$。
+
+\section{资源一致的平均速率与分位数指标}
+
+\subsection{瞬时 cluster rate}
+
+\begin{theorem}[Resource-consistent cluster rate]
+\label{thm:cluster-rate}
+在固定总地面带宽、复用因子 $K$、分配向量 $\bvec$ 和独立频段 DF ISL 下，leader
+地面直连速率为
+\begin{equation}
+ R_{\rm L}
+ =
+ b_{\rm L}\frac{\Btot}{K}
+ \log_2(1+\SINR_{\rm LU}).
+ \label{eq:leader-rate}
+\end{equation}
+且 cluster 瞬时速率为
+\begin{equation}
+ R_{\rm cl}
+ =
+ R_{\rm L}
+ +\sum_{i=1}^{\NF}
+ \min\left\{
+ B_{{\rm LF},i}\log_2(1+\SNR_{{\rm LF},i}),
+ b_{{\rm F},i}\frac{\Btot}{K}
+ \log_2(1+\SINR_{{\rm FU},i})
+ \right\}.
+ \label{eq:cluster-rate}
+\end{equation}
+式 \eqref{eq:cluster-rate} 同时满足地面总带宽守恒、频率复用带宽代价、地面干扰和 ISL
+瓶颈。
+\end{theorem}
+
+\begin{proof}
+由式 \eqref{eq:bcl} 和 \eqref{eq:branch-bandwidth}，leader 使用带宽
+$B_{\rm LU}=b_{\rm L}\Btot/K$，代入 Shannon 形式即得式 \eqref{eq:leader-rate}。
+第 $i$ 个 follower 路径必须先由 LF 链路成功传输，再由 FU 链路传给用户；DF 中继不能
+以高于任一跳容量的速率稳定传输，因此其可达端到端速率为两跳容量的最小值。不同
+follower 地面 RB 与 leader RB 正交，cluster 可将各路径速率相加，得到式
+\eqref{eq:cluster-rate}。最后，由
+$b_{\rm L}+\sum_i b_{{\rm F},i}=1$，
+\begin{equation}
+ B_{\rm LU}+\sum_iB_{{\rm FU},i}
+ =
+ \frac{\Btot}{K}
+ \left(b_{\rm L}+\sum_ib_{{\rm F},i}\right)
+ =\frac{\Btot}{K},
+\end{equation}
+故该速率表达式不违反固定总地面带宽约束。
+\end{proof}
+
+\begin{theorem}[对数速率的覆盖积分恒等式]
+对任意非负随机变量 $X$，
+\begin{equation}
+ \E[\log_2(1+X)]
+ =
+ \frac{1}{\ln2}\int_0^\infty
+ \frac{\Prob(X>t)}{1+t}\dd t.
+ \label{eq:tail-rate}
+\end{equation}
+\end{theorem}
+
+\begin{proof}
+对固定 $x\geq0$，
+\begin{equation}
+ \ln(1+x)=\int_0^x\frac{1}{1+t}\dd t
+ =\int_0^\infty\frac{\ind\{x>t\}}{1+t}\dd t.
+\end{equation}
+被积函数非负，故由 Tonelli 定理交换期望与积分：
+\begin{equation}
+\begin{split}
+ \E[\ln(1+X)]
+ &=\E\left[\int_0^\infty
+ \frac{\ind\{X>t\}}{1+t}\dd t\right]\\
+ &=\int_0^\infty
+ \frac{\E[\ind\{X>t\}]}{1+t}\dd t\\
+ &=\int_0^\infty
+ \frac{\Prob(X>t)}{1+t}\dd t.
+\end{split}
+\end{equation}
+除以 $\ln2$ 即得结论。
+\end{proof}
+
+因此 leader 平均速率可写为
+\begin{equation}
+ \Rbar_{\rm L}
+ =
+ \frac{b_{\rm L}\Btot}{K\ln2}
+ \int_0^\infty
+ \frac{P_{\rm cov}^{\rm LU}(t)}{1+t}\dd t.
+ \label{eq:mean-leader-rate}
+\end{equation}
+Follower DF 路径因两跳取最小值，可利用
+$\E[Y]=\int_0^\infty\Prob(Y>r)\dd r$ 写为
+\begin{equation}
+\begin{split}
+ \E[R_i^{\rm DF}]
+ &=
+ \int_0^\infty
+ \Prob\bigg(
+ B_{{\rm LF},i}\log_2(1+\SNR_{{\rm LF},i})>r,\\
+ &\hspace{4.8cm}
+ b_{{\rm F},i}\frac{\Btot}{K}
+ \log_2(1+\SINR_{{\rm FU},i})>r
+ \bigg)\dd r.
+\end{split}
+\label{eq:mean-df-rate-tail}
+\end{equation}
+最后
+\begin{equation}
+ \Rbar_{\rm cl}
+ =\E[R_{\rm cl}]
+ =\Rbar_{\rm L}+\sum_{i=1}^{\NF}\E[R_i^{\rm DF}].
+ \label{eq:mean-cluster-rate}
+\end{equation}
+
+\subsection{边缘可靠性指标}
+
+定义 cluster rate CDF
+\begin{equation}
+ F_R(r)=\Prob(R_{\rm cl}\leq r).
+ \label{eq:rate-cdf}
+\end{equation}
+$p$ 分位数速率定义为
+\begin{equation}
+ R_p=\inf\{r:F_R(r)\geq p\}.
+ \label{eq:quantile-rate}
+\end{equation}
+特别地，$R_{0.05}$ 衡量弱覆盖样本，$R_{0.50}$ 为中位速率。给定可靠性容限
+$\epsilon$，可靠性约束速率为
+\begin{equation}
+ R_{\epsilon}^{\rm rel}
+ =
+ \sup\{r:\Prob(R_{\rm cl}<r)\leq\epsilon\}.
+ \label{eq:reliability-rate}
+\end{equation}
+给定端到端覆盖要求 $P_0$，定义覆盖约束吞吐为
+\begin{equation}
+ T_{\rm cov}
+ =
+ \NL\Rbar_{\rm cl}\ind\{\Pe(\gamma,\gamma_{\rm LF})\geq P_0\}.
+ \label{eq:coverage-constrained-throughput}
+\end{equation}
+这些指标可防止平均速率掩盖边缘用户和可靠性损失。
+
+\section{网络吞吐代理与球面频谱效率}
+
+在每个 cluster 同时服务一个已调度代表用户的条件口径下，
+\begin{equation}
+ T_{\rm proxy}
+ =
+ \NL\Rbar_{\rm cl}.
+ \label{eq:network-throughput-proxy}
+\end{equation}
+地球总表面积为 $A_{\oplus}=4\pi\Rearth^2$，故球面频谱效率代理为
+\begin{equation}
+ \eta_{\rm sph,proxy}
+ =
+ \frac{T_{\rm proxy}}{4\pi\Rearth^2\Btot}
+ \quad
+ [\mathrm{bit/s/Hz/m^2}].
+ \label{eq:spherical-efficiency}
+\end{equation}
+若只评价典型用户可见球面帽，可定义
+\begin{equation}
+ A_{\rm vis}=2\pi\Rearth^2(1-\cos\thetam),
+ \qquad
+ \eta_{\rm vis,proxy}
+ =
+ \frac{T_{\rm proxy}}{A_{\rm vis}\Btot}.
+ \label{eq:visible-efficiency}
+\end{equation}
+
+\begin{remark}
+$p_{\rm act}$ 是条件同频重叠概率，不是全网发射概率，因此不能未经业务模型定义就把
+$T_{\rm proxy}$ 再乘 $p_{\rm act}$。若将来引入全局调度占空比 $p_{\rm tx}$，应单独写成
+$T_{\rm net}=p_{\rm tx}\NL\Rbar_{\rm cl}$。
+\end{remark}
+
+\section{覆盖约束部署优化}
+
+\subsection{变量与可行域}
+
+令允许的离散集合为
+\begin{equation}
+ \mathcal N_{\rm F}=\{0,1,\ldots,N_{\rm F}^{\max}\},
+ \qquad
+ \mathcal K=\{1,3,4,6,7\}.
+ \label{eq:discrete-domains}
+\end{equation}
+决策向量定义为
+\begin{equation}
+ \bm z=(\NF,K,\bvec,\avec,p_{\rm act},g_{\rm I}),
+ \label{eq:decision-vector}
+\end{equation}
+其中 $\bvec,\avec\in\Simplex_{\NF}$。若把 $p_{\rm act}$ 和 $g_{\rm I}$ 视为环境参数，则
+优化仅对前三或前四类变量进行。
+
+\subsection{问题 P1：覆盖约束下最大化 cluster rate}
+
+\begin{equation}
+\begin{aligned}
+ \mathrm{(P1)}\quad
+ \max_{\NF,K,\bvec,\avec}\quad
+ &\Rbar_{\rm cl}(\NF,K,\bvec,\avec)\\
+ \text{s.t.}\quad
+ &\Pe(\gamma,\gamma_{\rm LF})\geq P_0,\\
+ &\NF\in\mathcal N_{\rm F},\quad K\in\mathcal K,\\
+ &\bvec\in\Simplex_{\NF},\quad\avec\in\Simplex_{\NF},\\
+ &b_{\rm L}\geq b_{\rm L}^{\min},
+ \quad a_{\rm L}\geq a_{\rm L}^{\min}.
+\end{aligned}
+\label{eq:p1}
+\end{equation}
+
+\begin{proposition}[带宽变量是否影响 SINR 覆盖的判别]
+\label{prop:bandwidth-coverage-coupling}
+固定几何、功率分配、复用标记和干扰模型。对分支 $r$：
+\begin{enumerate}[leftmargin=2em]
+  \item 若使用固定参考噪声口径 $\nu_r=1$，且目标信号与干扰功率不随 $b_r$ 变化，则
+  SINR 门限覆盖概率与 $\bvec$ 无关；
+  \item 若使用固定链路总发射功率和带宽缩放热噪声
+  $\nu_r=b_r/K$，则 SINR 门限覆盖概率一般依赖 $\bvec$，P1 中的带宽分配与覆盖约束
+  真正耦合。
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+给定服务几何和干扰 $I_r$，分支覆盖事件为
+\begin{equation}
+ \frac{S_r}{\nu_r+I_r}\geq\gamma
+ \quad\Longleftrightarrow\quad
+ S_r\geq\gamma(\nu_r+I_r).
+ \label{eq:bandwidth-coverage-event}
+\end{equation}
+固定参考噪声口径下，$\nu_r=1$，且假设 $S_r,I_r$ 的条件分布不含 $b_r$，故式
+\eqref{eq:bandwidth-coverage-event} 的条件概率与 $b_r$ 无关；再对几何和干扰取期望后，
+接入覆盖与端到端覆盖同样与 $\bvec$ 无关。此时 P1 的覆盖可行性只由
+$(\NF,K,\avec,p_{\rm act},g_{\rm I})$ 决定，$\bvec$ 仅在可行集合内最大化速率。若扫描
+得到 $\alpha$ 位于边界，这可能是该结构性解耦的直接结果，不能解释成带宽分配提高了
+SINR 可靠性。
+
+在固定链路总发射功率且热噪声随带宽缩放时，
+\begin{equation}
+ \Prob(\SINR_r\geq\gamma\mid I_r,\Gvec_0)
+ =
+ \overline F_{S_r\mid\Gvec_0}
+ \left[
+ \gamma\left(\frac{b_r}{K}+I_r\right)
+ \right],
+ \label{eq:bandwidth-coupled-success}
+\end{equation}
+其阈值显式包含 $b_r$。对连续衰落且 CCDF 严格递减的区域，
+\begin{equation}
+ \frac{\partial}{\partial b_r}
+ \Prob(\SINR_r\geq\gamma\mid I_r,\Gvec_0)
+ =
+ -\frac{\gamma}{K}
+ f_{S_r\mid\Gvec_0}
+ \left[
+ \gamma\left(\frac{b_r}{K}+I_r\right)
+ \right]
+ \leq0.
+ \label{eq:bandwidth-coverage-derivative}
+\end{equation}
+另一方面，分支速率 $b_r\Btot K^{-1}\log_2(1+\SINR_r)$ 又含正向带宽因子。因此
+带宽增大带来更多传输维度，但同时提高该分支热噪声功率，形成真实的速率--可靠性权衡，
+故 P1 中 $\bvec$ 与覆盖约束一般不可分离。
+\end{proof}
+
+\begin{remark}
+若工程口径是固定功率谱密度，$S_r$ 和同块干扰 $I_r$ 也随 $b_r$ 同比缩放，结论可能
+再次接近带宽不变性。因此，任何最优 $\alpha$ 图必须同时报告“固定总发射功率”还是
+“固定功率谱密度”以及噪声缩放口径。本文部署图使用固定链路总发射功率和
+式 \eqref{eq:bandwidth-scaled-noise}。
+\end{remark}
+
+\subsection{问题 P2：最低速率约束下最大化可靠性}
+
+\begin{equation}
+\begin{aligned}
+ \mathrm{(P2)}\quad
+ \max_{\NF,K,\bvec,\avec}\quad
+ &\Pe(\gamma,\gamma_{\rm LF})\\
+ \text{s.t.}\quad
+ &\Rbar_{\rm cl}(\NF,K,\bvec,\avec)\geq R_0,\\
+ &\NF\in\mathcal N_{\rm F},\quad K\in\mathcal K,\\
+ &\bvec\in\Simplex_{\NF},\quad\avec\in\Simplex_{\NF}.
+\end{aligned}
+\label{eq:p2}
+\end{equation}
+
+\begin{proposition}[有限扫描域内最优解存在]
+\label{prop:opt-exists}
+若 $\mathcal N_{\rm F}$ 和 $\mathcal K$ 有限，连续变量可行域为闭有界单纯形，且
+$\Rbar_{\rm cl}$ 与 $\Pe$ 关于 $\bvec,\avec$ 连续，则只要 P1 或 P2 的可行集非空，
+其最优解存在。
+\end{proposition}
+
+\begin{proof}
+对任意固定 $(\NF,K)$，$\Simplex_{\NF}\times\Simplex_{\NF}$ 是有限维欧氏空间中的闭有界
+集合，故为紧集。覆盖或速率不等式约束是连续函数的闭原像，因此固定离散变量后的可行集
+仍为紧集。连续目标函数由 Weierstrass 定理在非空紧集上达到最大值。最后，
+$(\NF,K)$ 只取有限种组合，取各组合最优值中的最大者即可，故全局最优解存在。
+\end{proof}
+
+\begin{definition}[最优 follower 数量与相图]
+在给定环境参数
+$\bm e=(\NL,p_{\rm act},g_{\rm I},h,\thetac,P_0,R_0)$ 下，P1 的最优 follower 数量定义为
+\begin{equation}
+ N_{\rm F}^{\star}(\bm e)
+ \in
+ \arg\max_{\NF\in\mathcal N_{\rm F}}
+ \left\{
+ \max_{K,\bvec,\avec}
+ \Rbar_{\rm cl}:
+ \Pe\geq P_0
+ \right\}.
+ \label{eq:nf-star}
+\end{equation}
+在 $(\NL,g_{\rm I})$、$(\NL,p_{\rm act})$ 或 $(\NL,K)$ 平面上绘制
+$N_{\rm F}^{\star}$ 即得到部署相图。
+\end{definition}
+
+\begin{definition}[统计稳健的简约 follower 数量]
+当不同 $\NF$ 的估计速率差小于 Monte Carlo 波动或工程容差时，直接报告样本均值最大的
+$N_{\rm F}^{\star}$ 会产生不稳定跳变。给定相对速率容差
+$\delta_R\in[0,1)$，先定义覆盖可行集合
+\begin{equation}
+ \mathcal F(P_0)
+ =
+ \left\{
+ (\NF,K,\bvec,\avec):
+ \Pe^{\rm L}\geq P_0
+ \right\},
+ \label{eq:coverage-feasible-set}
+\end{equation}
+以及可行最大速率
+\begin{equation}
+ R_{\max}^{\rm feas}
+ =
+ \max_{(\NF,K,\bvec,\avec)\in\mathcal F(P_0)}
+ \Rbar_{\rm cl}.
+ \label{eq:maximum-feasible-rate}
+\end{equation}
+统计稳健的简约部署数量定义为
+\begin{equation}
+ N_{\rm F}^{\dagger}
+ =
+ \min\left\{
+ \NF:
+ \exists(K,\bvec,\avec)\in\mathcal F(P_0),\
+ \Rbar_{\rm cl}\geq(1-\delta_R)R_{\max}^{\rm feas}
+ \right\}.
+ \label{eq:parsimonious-follower-count}
+\end{equation}
+本文部署相图使用接入门限 $\gamma=-5$ dB、高可靠门限 $P_0=0.99$、Wilson 95\%
+覆盖下界以及 $\delta_R=0.03$；因此它回答的是“在不损失超过 3\% 验证样本可行最大
+速率的前提下，最少需要多少 followers”，而不是把数值噪声导致的微小均值差异解释成
+唯一精确最优点。
+\end{definition}
+
+\subsection{可复现求解流程}
+
+由于 $\NF$ 和 $K$ 为有限离散变量，主求解器采用外层穷举、内层连续优化：
+\begin{enumerate}[leftmargin=2em]
+  \item 对每个 $\NF\in\mathcal N_{\rm F}$ 和 $K\in\mathcal K$ 构造共享随机数样本或
+  半解析积分表；
+  \item 在 $\bvec,\avec$ 单纯形上使用网格初始化和约束优化；
+  \item 对每个候选点同时估计 $\Rbar_{\rm cl}$、$\Pe$ 及置信区间；
+  \item 使用置信下界判断覆盖约束，避免把统计波动误判为可行；
+  \item 对每个 follower 数量保留扫描阶段的最佳带宽候选，并在独立随机种子与更大样本上
+  重新估计其覆盖和速率；使用独立复验结果重新构造可行集合、可行最大速率和 3\% 近最优
+  集合；
+  \item 从独立复验近最优集合中按 follower 数量升序选取候选，再使用完整几何
+  Monte Carlo 和共享复用颜色审计其相关干扰覆盖；若覆盖置信下界不满足约束，则审计下一
+  候选，直至得到最终简约部署点。
+\end{enumerate}
+若使用覆盖置信下界 $\Pe^{\rm L}$，保守 P1 约束写为
+\begin{equation}
+ \Pe^{\rm L}(\gamma,\gamma_{\rm LF})\geq P_0.
+ \label{eq:conservative-coverage-constraint}
+\end{equation}
+
+上述两阶段复验分别控制不同风险。独立大样本重选防止扫描阶段的随机均值波动改变
+“3\% 近最优”集合；完整几何共享颜色审计则防止边缘 Gamma 独立采样低估多服务分支共同
+经历高干扰状态的概率。后者仅审计已进入独立复验近最优集合的候选，因而在保留相关干扰
+可信度的同时，避免对全部离散网格执行高复杂度完整几何仿真。
+
+\begin{proposition}[两阶段复验选择的有限样本保证]
+记独立复验样本构造的可行集合为
+\begin{equation}
+ \widehat{\mathcal F}_{\rm val}
+ =
+ \left\{
+ x:\widehat P_{{\rm e2e,val}}^{\rm L}(x)\geq P_0
+ \right\},
+\end{equation}
+其中 $x=(\NF,K,\bvec,\avec)$。令
+\begin{equation}
+ \widehat R_{\max,\rm val}^{\rm feas}
+ =
+ \max_{x\in\widehat{\mathcal F}_{\rm val}}
+ \widehat R_{\rm val}(x),
+\end{equation}
+并定义独立复验近最优集合
+\begin{equation}
+ \widehat{\mathcal F}_{\rm near}
+ =
+ \left\{
+ x\in\widehat{\mathcal F}_{\rm val}:
+ \widehat R_{\rm val}(x)
+ \geq
+ (1-\delta_R)\widehat R_{\max,\rm val}^{\rm feas}
+ \right\}.
+\end{equation}
+若算法按 $\NF$ 升序审计 $\widehat{\mathcal F}_{\rm near}$ 中的候选，并返回首个满足完整
+几何共享颜色审计下界
+\begin{equation}
+ \widehat P_{{\rm e2e,exact}}^{\rm L}(x)\geq P_0
+\end{equation}
+的候选 $\widehat x^\dagger$，则 $\widehat x^\dagger$ 同时满足：独立复验覆盖可行、
+独立复验速率位于 $\delta_R$ 近最优集合、完整相关干扰审计覆盖可行；并且它是在上述三项
+有限样本条件下 follower 数量最小的被审计候选。
+\end{proposition}
+
+\begin{proof}
+算法仅从 $\widehat{\mathcal F}_{\rm near}$ 中取候选，因此返回点按集合定义同时满足独立
+复验覆盖约束和独立复验近最优速率约束。算法只在完整几何审计覆盖下界不低于 $P_0$ 时
+返回，所以第三项成立。最后，候选按 $\NF$ 升序审计，所有 follower 数量更小且位于
+$\widehat{\mathcal F}_{\rm near}$ 的候选均已被审计并因不满足完整相关覆盖约束而拒绝；
+故返回点在这三个有限样本判据下具有最小 follower 数量。
+\end{proof}
+
+\begin{remark}
+该命题是\emph{有限样本与离散候选集合上的算法保证}，不是对未知真实分布下全局最优性的
+无条件保证。若需要把选择不确定性进一步量化，应对完整求解流程执行多随机种子重复，
+报告 $\widehat N_{\rm F}^{\dagger}$ 的选择频率、邻近候选性能和稳定区间。
+\end{remark}
+
+\section{Followers 的双重价值与设计准则}
+
+\begin{definition}[可靠性导向与吞吐导向部署]
+\begin{align}
+ N_{\mathrm F,rel}^{\star}
+ &\in\arg\max_{\NF}\Pe
+ \quad\text{s.t.}\quad \Rbar_{\rm cl}\geq R_0,
+ \label{eq:rel-deployment}\\
+ N_{\mathrm F,rate}^{\star}
+ &\in\arg\max_{\NF}\Rbar_{\rm cl}
+ \quad\text{s.t.}\quad \Pe\geq P_0.
+ \label{eq:rate-deployment}
+\end{align}
+\end{definition}
+
+两者一般不相等。增加 followers 提供额外可见路径并提高 ``至少一条路径成功'' 的机会；
+但固定带宽下，每个分支带宽减少，固定总功率下每个 follower 功率也可能减少，同时网络
+中其他 clusters 的同块 follower 干扰增加。因此，本文不使用笼统的
+``followers improve performance''，而使用以下可检验陈述：
+\begin{enumerate}[leftmargin=2em]
+  \item 在协调复用且 ISL 可靠时，followers 可以提高端到端可靠性；
+  \item 在固定总带宽下，followers 的平均速率收益会饱和，甚至反转；
+  \item 在固定集群总功率下，过多 followers 的功率稀释会进一步提前最优点；
+  \item 当 $g_{\rm I}$ 接近 $0$ dB 时，仅靠增加 followers 或复用因子难以同时获得高覆盖
+  与高速率；
+  \item 当 $g_{\rm I}$ 已很低时，继续增大 $K$ 的隔离收益减小，而 $1/K$ 带宽损失占主导；
+  \item 实际部署应在覆盖约束下联合选择 $\NF,K,\bvec,\avec$，不能只最大化
+  $T_{\rm proxy}$。
+\end{enumerate}
+
+\section{Monte Carlo、半解析验证与统计置信度}
+
+\subsection{完整几何 Monte Carlo}
+
+每个独立 realization 按下列顺序生成：
+\begin{enumerate}[leftmargin=2em]
+  \item 按式 \eqref{eq:serving-conditional-pdf} 生成 $\Theta_0$；
+  \item 给定 $\Theta_0$，按式 \eqref{eq:nonserving-pdf} 生成同一组外部 parent angles，
+  并在所有 RB 间共享；
+  \item 为每个外部 cluster 生成公共复用颜色、各 RB 活动、followers 偏移和衰落；
+  \item 对每个 follower 单独判断自身可见性，不以 parent leader 可见性代替；
+  \item 计算相关干扰向量、服务 SINR、接入事件、端到端事件和 cluster rate；
+  \item 对不同参数点使用明确记录的随机种子；最终验证使用与主图不同的独立种子。
+\end{enumerate}
+
+\subsection{均值置信区间}
+
+对独立样本 $X_1,\ldots,X_M$，样本均值和无偏样本方差为
+\begin{align}
+ \overline X
+ &=\frac1M\sum_{m=1}^{M}X_m,\label{eq:sample-mean}\\
+ S_X^2
+ &=\frac{1}{M-1}\sum_{m=1}^{M}(X_m-\overline X)^2.
+ \label{eq:sample-var}
+\end{align}
+大样本下，均值的双侧 $100(1-\alpha)\%$ 置信区间为
+\begin{equation}
+ \overline X
+ \pm z_{1-\alpha/2}\frac{S_X}{\sqrt M}.
+ \label{eq:mean-ci}
+\end{equation}
+小样本时应以 $t_{M-1,1-\alpha/2}$ 替换正态分位数。
+
+\subsection{覆盖概率的 Wilson 区间}
+
+若 $M$ 次试验中成功 $S$ 次，$\widehat p=S/M$。Wilson 区间为
+\begin{equation}
+ \frac{
+ \widehat p+\frac{z^2}{2M}
+ \pm
+ z\sqrt{
+ \frac{\widehat p(1-\widehat p)}{M}
+ +\frac{z^2}{4M^2}
+ }
+ }{
+ 1+\frac{z^2}{M}
+ },
+ \qquad z=z_{1-\alpha/2}.
+ \label{eq:wilson}
+\end{equation}
+
+\begin{proof}[Wilson 区间的推导]
+从 score 不等式
+\begin{equation}
+ \frac{|\widehat p-p|}
+ {\sqrt{p(1-p)/M}}\leq z
+\end{equation}
+出发，平方并移项：
+\begin{equation}
+ M(\widehat p-p)^2\leq z^2p(1-p).
+\end{equation}
+展开并按 $p$ 收集：
+\begin{equation}
+ (M+z^2)p^2-(2M\widehat p+z^2)p+M\widehat p^2\leq0.
+\end{equation}
+该二次不等式的两根即区间端点。使用求根公式并同时除以 $M$，整理后得到式
+\eqref{eq:wilson}。
+\end{proof}
+
+当 $S=0$ 时，Wilson 下界为 $0$，上界化简为
+\begin{equation}
+ p_{\rm U}=\frac{z^2}{M+z^2}.
+ \label{eq:zero-success-upper}
+\end{equation}
+例如 $M=1000$、$95\%$ 区间时，$p_{\rm U}\approx0.00383$。因此 ``未观察到成功''
+不能写成 ``真实覆盖概率为零''。对于更稀有事件，应增加样本、使用重要抽样，或只报告
+统计上界。
+
+\subsection{独立验证门禁}
+
+最终结果至少满足：
+\begin{enumerate}[leftmargin=2em]
+  \item 所有概率属于 $[0,1]$，所有速率与干扰非负且有限；
+  \item 关闭干扰时恢复 noise-limited 基线；
+  \item $\NF=0$ 时退化为 leader-only 网络；
+  \item 端到端覆盖不高于接入覆盖；
+  \item 降低 $p_{\rm act}$、降低 $g_{\rm I}$ 或增大 $K$ 时，边缘平均同频干扰不增加；
+  \item 固定总带宽下，各地面分支带宽和严格等于 $\Btot/K$；
+  \item parent leader 不可见但 follower 可见的干扰贡献严格非零；
+  \item 完整几何 Monte Carlo 与联合半解析或矩匹配在预设误差阈值内一致；
+  \item 优化结果使用独立随机种子重新验证，覆盖约束以置信下界判定。
+\end{enumerate}
+
+\section{计算复杂度}
+
+令 $M$ 为 Monte Carlo realizations 数，$N_\theta,N_\psi,N_\phi$ 为数值积分节点数，
+$N_s$ 为 Laplace 或门限节点数。
+
+\begin{proposition}[主要算法复杂度]
+\begin{enumerate}[leftmargin=2em]
+  \item 完整几何正交资源 Monte Carlo：每个 realization 需遍历 $\NL-1$ 个外部 clusters
+  及其 $\NF$ 个同块 followers，复杂度为
+  \begin{equation}
+   \mathcal O(M\NL\NF),
+   \label{eq:mc-complexity}
+  \end{equation}
+  若批量向量化，内存约为 $\mathcal O(M_b\NL)$ 或按 chunk 降低。
+  \item 单分支条件矩表：leader 分支复杂度约
+  $\mathcal O(N_{\theta_0}N_\theta)$；follower 分支因包含偏移积分，复杂度约
+  \begin{equation}
+   \mathcal O(N_{\theta_0}N_\theta N_\psi N_\phi).
+   \label{eq:moment-complexity}
+  \end{equation}
+  \item 联合 Laplace 变换：单个 $(\theta_0,\svec)$ 点约为
+  \begin{equation}
+   \mathcal O(N_\theta\NF N_\psi N_\phi),
+   \label{eq:joint-lt-complexity}
+  \end{equation}
+  对 $N_s$ 个点再乘 $N_s$。
+  \item 外层枚举优化：若连续内层优化每组使用 $N_{\rm in}$ 次指标评估，复杂度为
+  \begin{equation}
+   \mathcal O(
+   |\mathcal N_{\rm F}||\mathcal K|N_{\rm in}C_{\rm eval}),
+   \label{eq:optimization-complexity}
+  \end{equation}
+  其中 $C_{\rm eval}$ 为一次半解析或 Monte Carlo 指标计算代价。
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+完整 Monte Carlo 中，每个样本的每个外部 cluster 对 leader RB 产生一次候选干扰，并对
+$\NF$ 个 follower RB 各产生一次候选干扰，因此单样本操作数与
+$(\NL-1)(\NF+1)$ 同阶。其余三项直接由嵌套数值积分或枚举循环的节点数相乘得到。
+\end{proof}
+
+完整几何 Monte Carlo 用于最终验证；联合 Laplace 和矩匹配用于理论解释与中等规模计算；
+预计算矩表和均值场用于大规模相图扫描。近似路径必须由独立完整几何样本校验。
+
+\section{排队与时延讨论}
+
+本文主指标是物理层/链路层覆盖和速率，不建立完整排队网络。但 follower relay 会引入
+额外处理和调度时延。可定义简单时延代理
+\begin{equation}
+ D_i^{\rm proxy}
+ =
+ D_{\rm proc}
+ +D_{\rm sched}
+ +\frac{L}{C_{{\rm LF},i}}
+ +\frac{L}{C_{{\rm FU},i}},
+ \label{eq:delay-proxy}
+\end{equation}
+其中 $L$ 为数据块长度。若独立定义每时隙被调度概率 $p_{\rm sched}$，几何等待模型给出
+\begin{equation}
+ \E[D_{\rm sched}]
+ \approx\frac{T_{\rm slot}}{p_{\rm sched}}.
+ \label{eq:scheduling-delay}
+\end{equation}
+必须强调 $p_{\rm sched}$ 与本文的同频重叠概率 $p_{\rm act}$ 不同。降低外部同频活动可
+提高 SINR，但若通过更保守调度实现，也可能增加等待时延。因此高可靠性部署不必然是低
+时延部署，完整队列稳定性与时延优化留作后续工作。
+
+\section{与原噪声受限 TWC 模型的系统性对比}
+
+\begin{longtable}{p{0.22\linewidth}p{0.34\linewidth}p{0.36\linewidth}}
+\caption{原噪声受限分析与本文资源一致密集网络扩展的区别}
+\label{tab:comparison}\\
+\toprule
+维度 & 原噪声受限 follower 分析 & 本文扩展\\
+\midrule
+\endfirsthead
+\toprule
+维度 & 原噪声受限 follower 分析 & 本文扩展\\
+\midrule
+\endhead
+主要瓶颈 & 噪声、几何、衰落和 LF/FU 最小速率 & 再加入同频集群间干扰、固定总带宽与功率公平性\\
+服务几何 & 最近 leader 与其球冠 followers & 保留，并条件化推导所有非服务 clusters\\
+资源口径 & 各链路带宽主要按给定参数处理 & 固定 $\Btot$；复用产生 $1/K$ 带宽代价；一般 $\bvec$\\
+功率口径 & 固定链路发射功率 & 比较固定单星功率和固定 cluster 总功率\\
+干扰 & 不考虑 & 正交 RB 相关干扰向量；极端全同频仅作基准\\
+相关性 & 无需处理 & 共享 parent 几何与复用颜色；联合 Laplace 变换\\
+Follower 可见性 & 服务 follower 球冠几何 & 同时修正外部 parent 不可见但 follower 可见的干扰\\
+覆盖指标 & outage/coverage & 区分 access coverage 与 DF end-to-end coverage\\
+速率指标 & 平均链路/cluster rate & 资源一致速率、分位数、可靠性约束速率\\
+网络指标 & 主要关注单用户或单 cluster & 吞吐代理与球面频谱效率，明确非真实运营总吞吐\\
+设计问题 & 参数趋势分析 & P1/P2、$N_{\rm F}^{\star}$ 和部署相图\\
+验证 & 理论、近似与仿真 & 再加入联合相关性门禁、Wilson 区间和独立优化复验\\
+\bottomrule
+\end{longtable}
+
+\section{退化情形与逐项数学检查}
+
+\begin{enumerate}[leftmargin=2em]
+  \item \textbf{无 follower：}令 $\NF=0$，所有 follower 乘积为空积 $1$，式
+  \eqref{eq:joint-lt} 退化为 leader-only 干扰网络，式 \eqref{eq:cluster-rate} 只剩
+  leader 直连速率。
+  \item \textbf{无干扰：}令 $p_{\rm act}=0$ 或 $g_{\rm I}=0$，则所有核为 $1$，
+  $\Lcal_{\Ivec}=1$，故 $\Ivec=\bm0$，恢复 noise-limited 基线。
+  \item \textbf{无限隔离：}令 $G_{\rm I,dB}\to-\infty$，等价于 $g_{\rm I}\to0$，同样
+  恢复无干扰模型。
+  \item \textbf{复用 1：}令 $K=1$，所有 clusters 使用同一颜色，但带宽不额外缩减；
+  干扰是否严重仍由 $p_{\rm act}$ 和 $g_{\rm I}$ 决定。
+  \item \textbf{确定 ISL：}令 $W_{\rm LF}=1$，式 \eqref{eq:conditional-lf-success}
+  退化为确定门限指示。
+  \item \textbf{完美 ISL：}若 $p_{{\rm LF},i}=1$，端到端 coverage 退化为 access
+  coverage；这与式 \eqref{eq:e2e-less-access} 的等号条件一致。
+  \item \textbf{零球冠：}令 $\thetac\to0$，则 $\Psi\to0$，followers 与 parent leader
+  共角，follower 接触角分布退化到 parent 接触角。
+  \item \textbf{公共全同频：}若所有分支占用同一频带，必须使用式
+  \eqref{eq:common-lt}，不能使用正交 RB 边缘干扰的简单求和替代。
+\end{enumerate}
+
+\section{后续数值图与审查要求}
+
+完整结果部分应围绕同一主线组织为以下图组，而不是把互不相干的扫描平铺：
+\begin{enumerate}[leftmargin=2em]
+  \item 完整系统模型图；
+  \item 三种 cluster 内资源分配策略比较；
+  \item 联合半解析与完整几何 Monte Carlo 验证；
+  \item access coverage 与 end-to-end coverage；
+  \item 固定总带宽下 cluster rate 与 $\NF$；
+  \item 覆盖概率与 $\NF$；
+  \item 网络吞吐代理和球面频谱效率与 $\NL$；
+  \item rate--reliability frontier；
+  \item $K$、$p_{\rm act}$ 和 $g_{\rm I}$ 敏感性；
+  \item $N_{\rm F}^{\star}$ 部署相图；
+  \item 固定单星功率与固定 cluster 总功率对比；
+  \item 高度 $h$、球冠角 $\thetac$ 和可见角 $\thetam$ 敏感性；
+  \item 平均速率、$5\%$ 分位速率和可靠性约束速率比较。
+\end{enumerate}
+每张图必须保存可追溯 CSV，报告独立随机种子、样本量和置信区间；近似曲线必须与完整
+几何 Monte Carlo 交叉验证。任何 ``coverage 为零'' 的表述必须改为有限样本置信上界。
+
+\section{结论}
+
+本文完整推导表明，跟随式 LEO 网络的核心设计问题不是 ``增加 followers 是否总能提升
+性能''，而是固定总资源和密集复用下的多目标权衡。Followers 增加可用路径，因而可以
+提升端到端可靠性；与此同时，它们分割固定地面带宽、可能分割固定 cluster 总功率、
+引入额外 ISL 瓶颈，并使其他 clusters 中的同块 follower 干扰增加。正交主模型中的各
+分支干扰是由共享外部 parent 几何和复用颜色驱动的相关向量，不能被错误替换为独立边缘
+干扰或共同标量。
+
+因此，可靠性导向部署通常允许更多 followers，而吞吐导向部署应限制 follower 数量并
+保留 leader 资源。最终工程选择必须在端到端覆盖约束下联合优化
+$\NF,K,\bvec,\avec,p_{\rm act}$ 和有效波束隔离；同时必须分别报告固定单星功率与固定
+cluster 总功率结果。本文给出的定理、联合 Laplace 变换、统计门禁和优化定义构成后续
+代码实现、相图生成和最终结果分析的统一数学基线。
+
+\begin{thebibliography}{99}
+
+\bibitem{okati2020downlink}
+N.~Okati, T.~Riihonen, D.~Korpi, I.~Angervuori, and R.~Wichman,
+``Downlink coverage and rate analysis of low Earth orbit satellite constellations using stochastic geometry,''
+\emph{IEEE Transactions on Communications}, vol.~68, no.~8, pp.~5120--5134, 2020.
+
+\bibitem{talgat2020nearest}
+A.~Talgat, M.~A. Kishk, and M.-S. Alouini,
+``Nearest neighbor and contact distance distribution for binomial point process on spherical surfaces,''
+\emph{IEEE Communications Letters}, vol.~24, no.~12, pp.~2659--2663, 2020.
+
+\bibitem{talgat2021stochastic}
+A.~Talgat, M.~A. Kishk, and M.-S. Alouini,
+``Stochastic geometry-based analysis of LEO satellite communication systems,''
+\emph{IEEE Communications Letters}, vol.~25, no.~8, pp.~2458--2462, 2021.
+
+\bibitem{jung2023concept}
+D.-H.~Jung, G.~Im, J.-G.~Ryu, S.~Park, H.~Yu, and J.~Choi,
+``Satellite clustering for non-terrestrial networks: Concept, architectures, and applications,''
+\emph{IEEE Vehicular Technology Magazine}, vol.~18, no.~3, pp.~29--37, 2023.
+
+\bibitem{lee2024clustered}
+M.~Lee, S.~Kim, M.~Kim, D.-H.~Jung, and J.~Choi,
+``Analyzing downlink coverage in clustered low Earth orbit satellite constellations: A stochastic geometry approach,''
+arXiv:2402.16307, 2024.
+
+\bibitem{ru2026follower}
+J.~Ru, R.~Wang, and M.-S. Alouini,
+``Coverage and rate analysis of follower-based LEO satellite networks: A stochastic geometry approach,''
+\emph{IEEE Transactions on Wireless Communications}, vol.~25, pp.~12662--12675, 2026,
+doi: 10.1109/TWC.2026.3666549.
+
+\bibitem{wang2025survey}
+R.~Wang, M.~A. Kishk, and M.-S. Alouini,
+``Modeling and analysis of non-terrestrial networks by spherical stochastic geometry: A survey,''
+\emph{IEEE Communications Surveys \& Tutorials}, early access, 2025.
+
+\end{thebibliography}
+
+\end{document}
